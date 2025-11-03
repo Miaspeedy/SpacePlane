@@ -36,7 +36,7 @@ class SceneMain(Scene):
         self.player.position.y = self.game.getWindowHeight() - self.player.height
 
     def update(self, delta_time: float) -> None:
-        pass
+        self.keyboardControl()
 
     def render(self) -> None:
        playerRect = sdl.SDL_FRect(self.player.position.x, self.player.position.y,
@@ -49,3 +49,32 @@ class SceneMain(Scene):
 
     def handle_event(self, event: sdl.SDL_Event) -> None:
         pass
+
+    def keyboardControl(self) -> None:
+        keyboardState = sdl.SDL_GetKeyboardState(None)
+
+        if keyboardState[sdl.SDL_SCANCODE_W]:
+            self.player.position.y -= 1
+    
+        if keyboardState[sdl.SDL_SCANCODE_S]:
+            self.player.position.y += 1; 
+        
+        if keyboardState[sdl.SDL_SCANCODE_A]:
+            self.player.position.x -= 1
+    
+        if keyboardState[sdl.SDL_SCANCODE_D]:
+            self.player.position.x += 1
+   
+        # 限制飞机的移动范围
+        if self.player.position.x < 0:
+            self.player.position.x = 0
+        
+        if self.player.position.x > self.game.getWindowWidth() - self.player.width:
+            self.player.position.x = self.game.getWindowWidth() - self.player.width
+    
+        if self.player.position.y < 0:
+            self.player.position.y = 0
+    
+        if self.player.position.y > self.game.getWindowHeight() - self.player.height:
+            self.player.position.y = self.game.getWindowHeight() - self.player.height
+    
