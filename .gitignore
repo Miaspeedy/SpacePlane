@@ -1,0 +1,97 @@
+# --- Python bytecode / cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+.python_env/
+.conda/
+conda-env/
+
+# --- Packaging / build artifacts ---
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+*.egg
+*.manifest
+*.spec  # e.g. PyInstaller
+
+# --- Logs & runtime dumps ---
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Test / coverage ---
+.coverage
+.coverage.*
+.cache/
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.hypothesis/
+
+# --- Type checkers / linters / formatters ---
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+.pyright/
+.coverage.python  # sometimes created by tools
+
+# --- Notebooks ---
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# --- Project metadata / local config ---
+*.sqlite3
+db.sqlite3
+instance/
+*.pem
+
+# --- Framework-specific (uncomment if used) ---
+# Django:
+# staticfiles/
+# media/
+# Flask:
+# instance/
+# FastAPI:
+# .pytest_cache/
+# Scrapy:
+# .scrapy/
+# Sphinx docs:
+# docs/_build/
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Editors / IDEs ---
+.vscode/
+.idea/
+*.code-workspace
+
+# --- Pyenv / ASDF / PEP 582 ---
+# Keep .python-version if you want to pin pyenv version;
+# otherwise ignore it:
+#.python-version
+__pypackages__/  # PEP 582
+
+# --- Environment / secrets (be careful!) ---
+*.env
+*.env.* 
+.envrc
+.renv/
+secrets*.yaml
+secrets*.yml
+
+# --- Docker / Compose (optional) ---
+# docker-compose.override.yml
+# .docker/
