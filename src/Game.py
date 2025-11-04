@@ -111,7 +111,7 @@ class Game:
             self.currentScene.init()
 
 
-    def getrenderer(self):
+    def getRenderer(self):
         return self.renderer
 
     def getWindowWidth(self):
