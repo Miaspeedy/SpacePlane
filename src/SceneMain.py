@@ -161,7 +161,7 @@ class SceneMain(Scene):
         
 
     def spawEnemy(self) -> None:
-        if self.rng.random() > 1 / 60.0:
+        if self.rng.random() > 1 / self.game.GlobalSettings.SpawnEnemyStep:
             return
         # 间隔时间随机生成敌人
         enemy = Enemy()        

@@ -5,22 +5,23 @@ from typing import Optional
 from Logger import GameLogger as log
 from Scene import Scene
 from SceneMain import SceneMain
-
+from Object import GlobalObject
 
 class Game:
     def __init__(self):
-      self.windowWidth = 600
-      self.windowHeight = 800
-      self.FPS = 60
-      self.frameTime = 0.0   
-      self.deltaTime = 0.0  
-      self.currentScene: Optional[Scene] = None
-      self.isRunning = True
-      self.window:Optional[sdl.SDL_Window] = None
-      self.renderer:Optional[sdl.SDL_Renderer] = None
+        self.GlobalSettings = GlobalObject()
+        self.windowWidth = self.GlobalSettings.windowWidth
+        self.windowHeight = self.GlobalSettings.windowHeight
+        self.FPS = self.GlobalSettings.FPS
+        self.frameTime = 0.0   
+        self.deltaTime = 0.0  
+        self.currentScene: Optional[Scene] = None
+        self.isRunning = True
+        self.window:Optional[sdl.SDL_Window] = None
+        self.renderer:Optional[sdl.SDL_Renderer] = None
 
     def init(self):
-        #初始化 logger
+        # 初始化 logger
         log.set_level("Debug")
         log.set_detailed(False)
 
@@ -28,15 +29,15 @@ class Game:
 
         # 初始化视频子系统
         if not sdl.SDL_Init(sdl.SDL_INIT_VIDEO):
-             log.error("SDL_Init failed")
-        
+            log.error("SDL_Init failed")
+
         # 创建窗口
         self.window = sdl.SDL_CreateWindow(b"Space Plane",self.windowWidth, self.windowHeight, 
                                       sdl.SDL_WINDOW_RESIZABLE | sdl.SDL_WINDOW_HIGH_PIXEL_DENSITY)
         if not self.window:
             self.isRunning = False
             log.error("SDL_CreateWindow failed")
-        
+
         # 创建 2D 渲染器
         self.renderer = sdl.SDL_CreateRenderer(self.window, b"opengl")
         if not self.renderer:
@@ -45,14 +46,12 @@ class Game:
 
         self.currentScene = SceneMain(self)
         self.currentScene.init()
-        
 
     def clean(self):
         if self.currentScene is not None:
-          self.currentScene.clean()
-          self.currentScene = None
-        
-        
+            self.currentScene.clean()
+            self.currentScene = None
+
         sdl.SDL_DestroyRenderer(self.renderer)
         sdl.SDL_DestroyWindow(self.window)
         sdl.SDL_Quit()
@@ -71,7 +70,7 @@ class Game:
                 sleep_ns = int(self.frameTime - diff)
                 sleep_ms = int(sleep_ns / 1000000)
                 if sleep_ms > 0:
-                    sdl.SDL_Delay(sleep_ms)
+                    sdl.SDL_Delay(sleep_ms)     
                 # 使用目标帧时间作为 delta（秒）
                 self.deltaTime = self.frameTime / 1.0e9
             else:
@@ -85,12 +84,12 @@ class Game:
             if self.deltaTime > max_dt:
                 self.deltaTime = max_dt
 
-            #log.debug("FPS: {} ", 1 / self.deltaTime)
-        
+            # log.debug("FPS: {} ", 1 / self.deltaTime)
+
     def handleEvent(self,event : sdl.SDL_Event):
         while sdl.SDL_PollEvent(event):
             if event.type == sdl.SDL_EVENT_QUIT:
-              self.isRunning = False
+                self.isRunning = False
             self.currentScene.handle_event(event)
 
     def update(self, deltaTime : float):
@@ -103,19 +102,18 @@ class Game:
 
     def changeScene(self, scene):
         if self.currentScene is scene:
-          return
+            return
         if self.currentScene is not None:
             self.currentScene.clean()
         self.currentScene = scene
         if self.currentScene is not None:
             self.currentScene.init()
 
-
     def getRenderer(self):
         return self.renderer
 
     def getWindowWidth(self):
         return self.windowWidth
-    
+
     def getWindowHeight(self):
         return self.windowHeight
