@@ -17,8 +17,8 @@ class Scene(ABC):
         ...
 
     @abstractmethod
-    def update(self, delta_time: float) -> None:
-        """逻辑更新:delta_time 为tick """
+    def update(self, deltatime: float) -> None:
+        """逻辑更新:deltatime 为tick """
         ...
 
     @abstractmethod

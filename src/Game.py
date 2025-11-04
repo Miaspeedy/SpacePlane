@@ -11,6 +11,9 @@ class Game:
     def __init__(self):
       self.windowWidth = 600
       self.windowHeight = 800
+      self.FPS = 60
+      self.frameTime = 0.0   
+      self.deltaTime = 0.0  
       self.currentScene: Optional[Scene] = None
       self.isRunning = True
       self.window:Optional[sdl.SDL_Window] = None
@@ -18,9 +21,11 @@ class Game:
 
     def init(self):
         #初始化 logger
-        log.set_level("INFO")
+        log.set_level("Debug")
         log.set_detailed(False)
-        log.error("SDL_Init failed")
+
+        self.frameTime = 1000000000.0 / self.FPS
+
         # 初始化视频子系统
         if not sdl.SDL_Init(sdl.SDL_INIT_VIDEO):
              log.error("SDL_Init failed")
@@ -54,19 +59,42 @@ class Game:
 
     def run(self):
         while self.isRunning:
+            frameStart = sdl.SDL_GetTicksNS()
             event = sdl.SDL_Event()
             self.handleEvent(event)
-            self.update()
+            self.update(self.deltaTime)
             self.render()
+            frameEnd = sdl.SDL_GetTicksNS()
+            diff = frameEnd - frameStart  # nanoseconds
+            if diff < self.frameTime:
+                # 需要睡眠剩余时间以控制帧率，计算为毫秒并使用 SDL_Delay
+                sleep_ns = int(self.frameTime - diff)
+                sleep_ms = int(sleep_ns / 1000000)
+                if sleep_ms > 0:
+                    sdl.SDL_Delay(sleep_ms)
+                # 使用目标帧时间作为 delta（秒）
+                self.deltaTime = self.frameTime / 1.0e9
+            else:
+                # 使用实际耗时（秒）
+                self.deltaTime = diff / 1.0e9
 
+            # 保护性约束：防止 deltaTime 为 0 或异常巨大
+            if self.deltaTime <= 0:
+                self.deltaTime = 1.0 / self.FPS
+            max_dt = 0.5
+            if self.deltaTime > max_dt:
+                self.deltaTime = max_dt
+
+            #log.debug("FPS: {} ", 1 / self.deltaTime)
+        
     def handleEvent(self,event : sdl.SDL_Event):
         while sdl.SDL_PollEvent(event):
-            if event.type == sdl.SDL_QuitEvent():
+            if event.type == sdl.SDL_EVENT_QUIT:
               self.isRunning = False
             self.currentScene.handle_event(event)
 
-    def update(self):
-        self.currentScene.update(1)
+    def update(self, deltaTime : float):
+        self.currentScene.update(deltaTime)
 
     def render(self):
         sdl.SDL_RenderClear(self.renderer)
