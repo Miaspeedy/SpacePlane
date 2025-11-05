@@ -37,8 +37,8 @@ class Enemy:
         self.position:Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0,0)
         self.width = 0
         self.height = 0
-        self.currentHealth = 3
-        self.speed = 400
+        self.currentHealth = 1
+        self.speed = 300
         self.coolDown = 1.0 * 1e9  # 转为ns
         self.lastShootTime = 0
 
@@ -49,5 +49,16 @@ class ProjectileEnemy:
         self.direction: Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0, 0)
         self.width = 0
         self.height = 0
-        self.speed = 400
+        self.speed = 300
         self.damage = 1
+
+class Explosion:
+    def __init__(self):
+        self.texture: Optional[sdl.SDL_Texture] = None
+        self.position: Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0, 0)
+        self.width = 0
+        self.height = 0
+        self.currentFrame = 0
+        self.totalFrame = 0
+        self.startTime = 0
+        self.FPS = 10
