@@ -17,7 +17,7 @@ class Player:
         self.width = 0
         self.height = 0
         self.speed = 400
-        self.coolDown = 0.05 * 1e9  # 0.05秒转为ns
+        self.coolDown = 0.3 * 1e9  # 0.05秒转为ns
         self.lastShootTime = 0
 
 class ProjectilePlayer:
@@ -32,6 +32,17 @@ class Enemy:
     def __init__(self):
         self.texture:Optional[sdl.SDL_Texture] = None
         self.position:Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0,0)
+        self.width = 0
+        self.height = 0
+        self.speed = 400
+        self.coolDown = 1.0 * 1e9  # 转为ns
+        self.lastShootTime = 0
+
+class ProjectileEnemy:
+    def __init__(self):
+        self.texture: Optional[sdl.SDL_Texture] = None
+        self.position: Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0, 0)
+        self.direction: Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0, 0)
         self.width = 0
         self.height = 0
         self.speed = 400
