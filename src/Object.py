@@ -16,6 +16,8 @@ class Player:
         self.position:Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0,0)
         self.width = 0
         self.height = 0
+        self.currentHealth = 3
+        self.maxHealth = 3
         self.speed = 400
         self.coolDown = 0.3 * 1e9  # 0.05秒转为ns
         self.lastShootTime = 0
@@ -27,6 +29,7 @@ class ProjectilePlayer:
         self.width = 0
         self.height = 0
         self.speed = 600
+        self.damage = 1
 
 class Enemy:
     def __init__(self):
@@ -34,6 +37,7 @@ class Enemy:
         self.position:Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0,0)
         self.width = 0
         self.height = 0
+        self.currentHealth = 3
         self.speed = 400
         self.coolDown = 1.0 * 1e9  # 转为ns
         self.lastShootTime = 0
@@ -46,3 +50,4 @@ class ProjectileEnemy:
         self.width = 0
         self.height = 0
         self.speed = 400
+        self.damage = 1

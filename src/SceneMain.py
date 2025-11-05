@@ -20,7 +20,8 @@ class SceneMain(Scene):
         super().__init__(game)
         seed = secrets.randbits(64)
         self.rng = random.Random(seed)
-        self.player = Player()      
+        self.player = Player()  
+        self.isDead = False    
         self.projectilePlayerTemplate = ProjectilePlayer()
         self.projectileEnemyTemplate = ProjectileEnemy()
         self.enemyTemplate = Enemy()
@@ -70,6 +71,7 @@ class SceneMain(Scene):
         self.updateEnemyProjectiles(deltatime)
         self.spawEnemy()
         self.updateEnemies(deltatime)
+        self.updatePlayer(deltatime)
 
     def render(self) -> None:
         # 渲染玩家子弹
@@ -78,9 +80,10 @@ class SceneMain(Scene):
         self.renderEnemyProjectiles()
 
         # 渲染玩家
-        playerRect = sdl.SDL_FRect(self.player.position.x, self.player.position.y,
+        if not self.isDead:            
+            playerRect = sdl.SDL_FRect(self.player.position.x, self.player.position.y,
                         self.player.width, self.player.height)
-        sdl.SDL_RenderTexture(self.game.getRenderer(), self.player.texture, None, playerRect)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.player.texture, None, playerRect)
 
         # 渲染敌人
         self.renderEnemies()
@@ -116,6 +119,9 @@ class SceneMain(Scene):
         pass
 
     def keyboardControl(self, deltatime: float) -> None:
+        if self.isDead:
+            return
+
         keyboardState = sdl.SDL_GetKeyboardState(None)
 
         if keyboardState[sdl.SDL_SCANCODE_W]:
@@ -150,6 +156,22 @@ class SceneMain(Scene):
                 self.playerShoot()
                 self.player.lastShootTime = currentTime
 
+    def updatePlayer(self, deltatime: float) -> None:
+        if self.isDead:
+            return
+        if self.player.currentHealth <= 0:
+            self.isDead = True
+        for enemy in self.enemies:
+            enemyRect = sdl.SDL_Rect(int(enemy.position.x), int(enemy.position.y), 
+                                    enemy.width, enemy.height)
+
+            playerRect = sdl.SDL_Rect(int(self.player.position.x), int(self.player.position.y), 
+                                    self.player.width, self.player.height)
+            # 碰撞检测成功
+            if sdl.SDL_HasRectIntersection(enemyRect, playerRect):
+                self.player.currentHealth -= 1
+                enemy.currentHealth = 0
+
     def playerShoot(self) -> None:
         # 发射子弹
         projectile = ProjectilePlayer() 
@@ -169,6 +191,19 @@ class SceneMain(Scene):
             p.position.y -= p.speed * deltatime
             if p.position.y + margin < 0:
                 self.projectilesPlayer.pop(i)
+            else:
+                # 检测与敌机的碰撞
+                for j in range(len(self.enemies) - 1, -1, -1):
+                    enemyRect = sdl.SDL_Rect(int(self.enemies[j].position.x), int(self.enemies[j].position.y), 
+                                            self.enemies[j].width, self.enemies[j].height)
+
+                    projectileRect = sdl.SDL_Rect(int(p.position.x), int(p.position.y), 
+                                            p.width, p.height)
+                    # 碰撞检测成功
+                    if sdl.SDL_HasRectIntersection(enemyRect, projectileRect):
+                        self.enemy.currentHealth -= p.damage
+                        self.projectilesPlayer.pop(i)
+                        break
 
     def renderPlayerProjectiles(self) -> None:
         for projectile in self.projectilesPlayer:
@@ -198,15 +233,57 @@ class SceneMain(Scene):
                 self.enemies.pop(i)
             else:
                 # 敌机射击
-                if currentTime - enemy.lastShootTime > enemy.coolDown:
+                if (currentTime - enemy.lastShootTime > enemy.coolDown) and (not self.isDead):
                     self.enemyShoot(enemy)
                     enemy.lastShootTime = currentTime
+
+                if enemy.currentHealth <= 0:
+                    self.enemyExplode(enemy)
+                    self.enemies.pop(i)
 
     def renderEnemies(self) -> None:
         for enemy in self.enemies:
             enemyRect = sdl.SDL_FRect(int(enemy.position.x),int(enemy.position.y), 
                                                         enemy.width, enemy.height)
             sdl.SDL_RenderTexture(self.game.getRenderer(), enemy.texture, None, enemyRect)
+
+    def updateEnemyProjectiles(self, deltatime: float) -> None:
+        margin = 32  # 子弹超出屏幕外边界的距离
+        for i in range(len(self.projectilesEnemy) - 1, -1, -1):
+            projectile = self.projectilesEnemy[i]
+            projectile.position.x += (
+                projectile.speed * projectile.direction.x * deltatime
+            )
+            projectile.position.y += (
+                projectile.speed * projectile.direction.y * deltatime
+            )
+            if (
+                (projectile.position.x > self.game.getWindowWidth() + margin)
+                or (projectile.position.x < -margin)
+                or (projectile.position.y < -margin)
+                or (projectile.position.x > self.game.getWindowWidth() + margin)
+            ):
+                self.projectilesEnemy.pop(i)
+            else:
+                # 检测与玩家的碰撞
+                projectileRect = sdl.SDL_Rect(
+                    int(projectile.position.x),
+                    int(projectile.position.y),
+                    projectile.width,
+                    projectile.height,
+                )
+
+                playerRect = sdl.SDL_Rect(
+                    int(self.player.position.x),
+                    int(self.player.position.y),
+                    self.player.width,
+                    self.player.height,
+                )
+
+                # 碰撞检测成功
+                if sdl.SDL_HasRectIntersection(projectileRect, playerRect):
+                    self.player.currentHealth -= projectile.damage
+                    self.projectilesEnemy.pop(i)
 
     def renderEnemyProjectiles(self) -> None:
         for projectile in self.projectilesEnemy:
@@ -222,15 +299,6 @@ class SceneMain(Scene):
                 None,
                 False
             )
-
-    def updateEnemyProjectiles(self, deltatime: float) -> None:
-        margin = 32  # 子弹超出屏幕外边界的距离
-        for i in range(len(self.projectilesEnemy) - 1, -1, -1):
-            projectile = self.projectilesEnemy[i]
-            projectile.position.x += projectile.speed * projectile.direction.x * deltatime
-            projectile.position.y += projectile.speed * projectile.direction.y * deltatime
-            if (projectile.position.x > self.game.getWindowWidth() + margin) or (projectile.position.x < -margin) or (projectile.position.y < -margin) or (projectile.position.x > self.game.getWindowWidth() + margin):
-                self.projectilesEnemy.pop(i)
 
     def enemyShoot(self, enemy: Enemy) -> None:
         projectile = ProjectileEnemy()
@@ -250,3 +318,7 @@ class SceneMain(Scene):
         x /= length
         y /= length
         return sdl.SDL_FPoint(x, y)
+
+    def enemyExplode(self, enemy: Enemy) -> None:
+        # todo 播放爆炸动画
+        pass
