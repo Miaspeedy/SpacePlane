@@ -9,7 +9,7 @@ import math
 
 from Logger import GameLogger as log
 from Scene import Scene
-from Object import Player, ProjectilePlayer, Enemy, ProjectileEnemy, Explosion
+from Object import Player, ProjectilePlayer, Enemy, ProjectileEnemy, Explosion, ItemType, Item
 
 if TYPE_CHECKING:
     # 避免循环导入
@@ -26,10 +26,12 @@ class SceneMain(Scene):
         self.projectileEnemyTemplate = ProjectileEnemy()
         self.enemyTemplate = Enemy()
         self.explosionTemplate = Explosion()
+        self.itemLifeTemplate = Item()
         self.projectilesPlayer = []
         self.enemies = []
         self.projectilesEnemy = []
         self.explosions = []
+        self.items = []
 
     def init(self) -> None:
 
@@ -79,6 +81,14 @@ class SceneMain(Scene):
         )
         self.explosionTemplate.width = self.explosionTemplate.height
 
+        self.itemLifeTemplate.texture = sdl.IMG_LoadTexture(
+            self.game.getRenderer(),
+            b"D:/PyProjects/SpacePlane/assets/image/bonus_life.png",
+        )
+        ok = sdl.SDL_GetTextureSize(self.itemLifeTemplate.texture, byref(w), byref(h))
+        self.itemLifeTemplate.width = int(w.value / 4)
+        self.itemLifeTemplate.height = int(h.value / 4)
+
     def update(self, deltaTime: float) -> None:
         self.keyboardControl(deltaTime)
         self.updatePlayerProjectiles(deltaTime)
@@ -87,6 +97,7 @@ class SceneMain(Scene):
         self.updateEnemies(deltaTime)
         self.updatePlayer(deltaTime)
         self.updateExplosions(deltaTime)
+        self.updateItems(deltaTime)
 
     def render(self) -> None:
         # 渲染玩家子弹
@@ -102,6 +113,9 @@ class SceneMain(Scene):
 
         # 渲染敌人
         self.renderEnemies()
+
+        # 渲染物品
+        self.renderItems()
 
         # 渲染爆炸效果
         self.renderExplosions()
@@ -119,6 +133,8 @@ class SceneMain(Scene):
             sdl.SDL_DestroyTexture(self.projectileEnemyTemplate.texture)
         if self.explosionTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.explosionTemplate.texture)
+        if self.itemLifeTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.itemLifeTemplate.texture)
 
         for projectile in self.projectilesPlayer:
             if projectile.texture is not None:
@@ -139,6 +155,11 @@ class SceneMain(Scene):
             if explosion.texture is not None:
                 sdl.SDL_DestroyTexture(explosion.texture)
         self.explosions.clear()
+
+        for item in self.items:
+            if item.texture is not None:
+                sdl.SDL_DestroyTexture(item.texture)
+        self.items.clear()
 
     def handle_event(self, event: sdl.SDL_Event) -> None:
         pass
@@ -369,6 +390,10 @@ class SceneMain(Scene):
         explosion.startTime = currentTime
         self.explosions.append(explosion)
 
+        # 随机生成物品
+        if self.rng.random() < self.game.GlobalSettings.LifeItemRate:
+            self.dropItem(enemy)
+
     def updateExplosions(self, deltaTime: float) -> None:
         currentTime = sdl.SDL_GetTicksNS()
         for i in range(len(self.explosions) - 1, -1, -1):
@@ -396,3 +421,73 @@ class SceneMain(Scene):
                 srcRect,
                 destRect,
             )
+
+    def dropItem(self, enemy: Enemy) -> None:
+        item = Item()
+        item.texture = self.itemLifeTemplate.texture
+        item.width = self.itemLifeTemplate.width
+        item.height = self.itemLifeTemplate.height
+        item.speed = self.itemLifeTemplate.speed
+        item.position.x = enemy.position.x + enemy.width / 2 - item.width / 2
+        item.position.y = enemy.position.y + enemy.height / 2 - item.height / 2
+        angle = self.rng.random() * 2.0 * math.pi
+        item.direction.x = math.cos(angle)
+        item.direction.y = math.sin(angle)
+        self.items.append(item)
+
+    def updateItems(self, deltaTime: float) -> None:
+        for i in range(len(self.items) - 1, -1, -1):
+            item = self.items[i]
+            # 更新位置
+            item.position.x += item.speed * item.direction.x * deltaTime
+            item.position.y += item.speed * item.direction.y * deltaTime
+
+            # 处理屏幕边缘反弹
+            if item.position.x < 0 and item.bounceCount > 0:
+                item.direction.x = -item.direction.x
+                item.bounceCount -= 1
+
+            if item.position.x + item.width > self.game.getWindowWidth() and item.bounceCount > 0:
+                item.direction.x = -item.direction.x
+                item.bounceCount -= 1
+
+            if item.position.y < 0 and item.bounceCount > 0:
+                item.direction.y = -item.direction.y
+                item.bounceCount -= 1
+
+            if item.position.y + item.height > self.game.getWindowHeight() and item.bounceCount > 0:
+                item.direction.y = -item.direction.y
+                item.bounceCount -= 1
+
+            # 超出屏幕范围则删除
+            if (item.position.x + item.width < 0) or (item.position.x > self.game.getWindowWidth()) or \
+               (item.position.y + item.height < 0) or (item.position.y > self.game.getWindowHeight()):
+                self.items.pop(i)
+            else:
+                # 检测与玩家的碰撞
+                itemRect = sdl.SDL_Rect(int(item.position.x),int(item.position.y),
+                    item.width,item.height)
+
+                playerRect = sdl.SDL_Rect(
+                    int(self.player.position.x),
+                    int(self.player.position.y),
+                    self.player.width,
+                    self.player.height,
+                )
+
+                # 碰撞检测成功
+                if sdl.SDL_HasRectIntersection(itemRect, playerRect):
+                    self.playerGetItem(item)
+                    self.items.pop(i)
+
+    def playerGetItem(self, item: Item) -> None:
+        if item.type == ItemType.Life:
+            self.player.currentHealth += 1
+            if self.player.currentHealth > self.player.maxHealth:
+                self.player.currentHealth = self.player.maxHealth
+
+    def renderItems(self) -> None:
+        for item in self.items:
+            itemRect = sdl.SDL_FRect(int(item.position.x),int(item.position.y), 
+                                                        item.width, item.height)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), item.texture, None, itemRect)
