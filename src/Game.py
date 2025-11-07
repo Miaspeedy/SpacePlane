@@ -2,11 +2,12 @@ import sdl3 as sdl
 from sdl3 import SDL_ttf as ttf
 from sdl3 import SDL_mixer as mix
 from typing import Optional
+from ctypes import c_float, byref
 
 from Logger import GameLogger as log
 from Scene import Scene
 from SceneMain import SceneMain
-from Object import GlobalObject
+from Object import GlobalObject,Background
 
 class Game:
     def __init__(self):
@@ -23,6 +24,8 @@ class Game:
         self.mixer:Optional[sdl.MIX_Mixer] = None
         self.bgmTrack: Optional[sdl.MIX_Track] = None
         self.musicTrack: Optional[sdl.MIX_Track] = None
+        self.nearStars = None
+        self.farStars = None
 
     def init(self):
         # 初始化 logger
@@ -77,6 +80,22 @@ class Game:
         sdl.MIX_SetTrackGain(self.bgmTrack, 0.5)
         sdl.MIX_SetTrackGain(self.musicTrack, 0.4)
 
+        # 初始化背景卷轴
+        w = c_float()
+        h = c_float()
+        self.nearStars = Background()
+        self.nearStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),b"D:/PyProjects/SpacePlane/assets/image/Stars-A.png")
+        sdl.SDL_GetTextureSize(self.nearStars.texture, byref(w), byref(h))
+        self.nearStars.width = int(w.value / 2)
+        self.nearStars.height = int(h.value / 2)
+
+        self.farStars = Background()
+        self.farStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),b"D:/PyProjects/SpacePlane/assets/image/Stars-B.png")
+        sdl.SDL_GetTextureSize(self.farStars.texture, byref(w), byref(h))
+        self.farStars.width = int(w.value / 2)
+        self.farStars.height = int(h.value / 2)
+        self.farStars.speed = 20
+
         self.currentScene = SceneMain(self)
         self.currentScene.init()
 
@@ -84,6 +103,13 @@ class Game:
         if self.currentScene is not None:
             self.currentScene.clean()
             self.currentScene = None
+
+        if self.nearStars is not None:
+            sdl.SDL_DestroyTexture(self.nearStars.texture)
+            self.nearStars = None
+        if self.farStars is not None:
+            sdl.SDL_DestroyTexture(self.farStars.texture)
+            self.farStars = None
 
         sdl.MIX_DestroyTrack(self.bgmTrack)
         sdl.MIX_DestroyTrack(self.musicTrack)
@@ -131,10 +157,12 @@ class Game:
             self.currentScene.handle_event(event)
 
     def update(self, deltaTime : float):
+        self.backgroundUpdate(deltaTime)
         self.currentScene.update(deltaTime)
 
     def render(self):
         sdl.SDL_RenderClear(self.renderer)
+        self.renderBackground()    
         self.currentScene.render()
         sdl.SDL_RenderPresent(self.renderer)
 
@@ -158,15 +186,32 @@ class Game:
 
     def getMixer(self):
         return self.mixer
-    
+
     def getBGMTrack(self):
         return self.bgmTrack
-    
+
     def getMusicTrack(self):
         return self.musicTrack
 
     def backgroundUpdate(self, deltaTime : float):
-        pass
+        self.nearStars.offset += self.nearStars.speed * deltaTime
+        if self.nearStars.offset >= 0:  
+            self.nearStars.offset -= self.nearStars.height
+   
+        self.farStars.offset += self.farStars.speed * deltaTime
+        if self.farStars.offset >= 0:
+            self.farStars.offset -= self.farStars.height
 
     def renderBackground(self):
-        pass
+        # 渲染远处的星星
+        for posY in range(int(self.farStars.offset), self.getWindowHeight(), int(self.farStars.height)):
+            for posX in range(0, self.getWindowWidth(), int(self.farStars.width)):
+                dstRect = sdl.SDL_FRect(posX, posY, self.farStars.width, self.farStars.height)
+                sdl.SDL_RenderTexture(self.getRenderer(), self.farStars.texture, None, dstRect)
+
+        # 渲染近处的星星
+        for posY in range(int(self.nearStars.offset), self.getWindowHeight(), int(self.nearStars.height)):
+            for posX in range(0, self.getWindowWidth(), int(self.nearStars.width)):
+                dstRect = sdl.SDL_FRect(posX, posY, self.nearStars.width, self.nearStars.height)
+                sdl.SDL_RenderTexture(self.getRenderer(), self.nearStars.texture, None, dstRect)      
+        

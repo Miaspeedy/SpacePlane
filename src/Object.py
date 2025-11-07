@@ -55,6 +55,15 @@ class ProjectileEnemy:
         self.speed = 300
         self.damage = 1
 
+class Background:
+    def __init__(self):
+        self.texture: Optional[sdl.SDL_Texture] = None
+        self.position: Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0, 0)
+        self.width = 0
+        self.height = 0
+        self.offset = 0
+        self.speed = 100
+
 class Explosion:
     def __init__(self):
         self.texture: Optional[sdl.SDL_Texture] = None
