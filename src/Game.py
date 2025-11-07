@@ -1,5 +1,6 @@
 import sdl3 as sdl
-from sdl3 import SDL_image as img
+from sdl3 import SDL_ttf as ttf
+from sdl3 import SDL_mixer as mix
 from typing import Optional
 
 from Logger import GameLogger as log
@@ -19,6 +20,9 @@ class Game:
         self.isRunning = True
         self.window:Optional[sdl.SDL_Window] = None
         self.renderer:Optional[sdl.SDL_Renderer] = None
+        self.mixer:Optional[sdl.MIX_Mixer] = None
+        self.bgmTrack: Optional[sdl.MIX_Track] = None
+        self.musicTrack: Optional[sdl.MIX_Track] = None
 
     def init(self):
         # 初始化 logger
@@ -44,6 +48,35 @@ class Game:
             self.isRunning = False
             log.error("SDL_CreateRenderer failed")     
 
+        # 初始化SDL_mixer
+        if not mix.MIX_Init():
+            self.isRunning = False
+            log.error("SDL_mixer initialization failed")
+
+        # 选用默认播放设备 音频规格用默认值
+        self.mixer = sdl.MIX_CreateMixerDevice(
+            sdl.SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, None 
+        )  
+        if not self.mixer:
+            self.isRunning = False
+            log.error("SDL_mixer initialization failed")
+
+        # 创建track
+        self.bgmTrack = sdl.MIX_CreateTrack(self.mixer)
+        if not self.bgmTrack:
+            self.isRunning = False
+            log.error("SDL_mixer could not initialize! SDL_mixer Error: {}", mix.Mix_GetError())
+
+        self.musicTrack = sdl.MIX_CreateTrack(self.mixer)
+        if not self.musicTrack:
+            self.isRunning = False
+            log.error("SDL_mixer could not initialize! SDL_mixer Error: {}", mix.Mix_GetError())
+
+        # 设置整体音量
+        sdl.MIX_SetMasterGain(self.mixer, 0.2)
+        sdl.MIX_SetTrackGain(self.bgmTrack, 0.5)
+        sdl.MIX_SetTrackGain(self.musicTrack, 0.4)
+
         self.currentScene = SceneMain(self)
         self.currentScene.init()
 
@@ -51,6 +84,11 @@ class Game:
         if self.currentScene is not None:
             self.currentScene.clean()
             self.currentScene = None
+
+        sdl.MIX_DestroyTrack(self.bgmTrack)
+        sdl.MIX_DestroyTrack(self.musicTrack)
+        sdl.MIX_DestroyMixer(self.mixer)
+        sdl.MIX_Quit()
 
         sdl.SDL_DestroyRenderer(self.renderer)
         sdl.SDL_DestroyWindow(self.window)
@@ -117,3 +155,18 @@ class Game:
 
     def getWindowHeight(self):
         return self.windowHeight
+
+    def getMixer(self):
+        return self.mixer
+    
+    def getBGMTrack(self):
+        return self.bgmTrack
+    
+    def getMusicTrack(self):
+        return self.musicTrack
+
+    def backgroundUpdate(self, deltaTime : float):
+        pass
+
+    def renderBackground(self):
+        pass

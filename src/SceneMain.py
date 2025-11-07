@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 import sdl3 as sdl
 from sdl3 import SDL_image as img
+from sdl3 import SDL_mixer as mix
 from ctypes import c_float, byref
 import random
 import secrets  # 用于获取高质量随机种子
@@ -32,8 +33,15 @@ class SceneMain(Scene):
         self.projectilesEnemy = []
         self.explosions = []
         self.items = []
+        self.sounds = {}
 
     def init(self) -> None:
+
+        # 读取音频文件
+        self.initMusic()
+
+        # 播放背景音乐
+        self.playSoundByName("bgm")
 
         # todo 改为相对位置
         self.player.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/SpaceShip.png")
@@ -161,6 +169,10 @@ class SceneMain(Scene):
                 sdl.SDL_DestroyTexture(item.texture)
         self.items.clear()
 
+        for sound in self.sounds.values():
+            mix.MIX_DestroyAudio(sound)
+        self.sounds.clear()
+
     def handle_event(self, event: sdl.SDL_Event) -> None:
         pass
 
@@ -218,6 +230,7 @@ class SceneMain(Scene):
             explosion.position.y = self.player.position.y + self.player.height / 2 - explosion.height / 2
             explosion.startTime = currentTime
             self.explosions.append(explosion)
+            self.playSoundByName("player_explode")
             return
 
         for enemy in self.enemies:
@@ -242,6 +255,7 @@ class SceneMain(Scene):
         projectile.position.x = self.player.position.x + self.player.width / 2 - projectile.width / 2
         projectile.position.y = self.player.position.y
         self.projectilesPlayer.append(projectile)
+        self.playSoundByName("player_shoot")
 
     def updatePlayerProjectiles(self, deltaTime: float) -> None:
         margin = 32  # 子弹超出屏幕外边界的距离
@@ -262,6 +276,7 @@ class SceneMain(Scene):
                     if sdl.SDL_HasRectIntersection(enemyRect, projectileRect):
                         self.enemies[j].currentHealth -= p.damage
                         self.projectilesPlayer.pop(i)
+                        self.playSoundByName("hit")
                         break
 
     def renderPlayerProjectiles(self) -> None:
@@ -343,6 +358,7 @@ class SceneMain(Scene):
                 if sdl.SDL_HasRectIntersection(projectileRect, playerRect):
                     self.player.currentHealth -= projectile.damage
                     self.projectilesEnemy.pop(i)
+                    self.playSoundByName("hit")
 
     def renderEnemyProjectiles(self) -> None:
         for projectile in self.projectilesEnemy:
@@ -369,6 +385,7 @@ class SceneMain(Scene):
         projectile.position.y = enemy.position.y + enemy.height / 2 - projectile.height / 2
         projectile.direction = self.getDirection(enemy)
         self.projectilesEnemy.append(projectile)
+        self.playSoundByName("enemy_shoot")
 
     def getDirection(self, enemy: Enemy) -> sdl.SDL_FPoint:
         x = (self.player.position.x + self.player.width / 2) - (enemy.position.x + enemy.width / 2)
@@ -389,6 +406,7 @@ class SceneMain(Scene):
         explosion.position.y = (enemy.position.y + enemy.height / 2 - explosion.height / 2)
         explosion.startTime = currentTime
         self.explosions.append(explosion)
+        self.playSoundByName("enemy_explode")
 
         # 随机生成物品
         if self.rng.random() < self.game.GlobalSettings.LifeItemRate:
@@ -476,9 +494,10 @@ class SceneMain(Scene):
                 )
 
                 # 碰撞检测成功
-                if sdl.SDL_HasRectIntersection(itemRect, playerRect):
+                if sdl.SDL_HasRectIntersection(itemRect, playerRect) and (not self.isDead):
                     self.playerGetItem(item)
                     self.items.pop(i)
+                    self.playSoundByName("get_item")
 
     def playerGetItem(self, item: Item) -> None:
         if item.type == ItemType.Life:
@@ -491,3 +510,42 @@ class SceneMain(Scene):
             itemRect = sdl.SDL_FRect(int(item.position.x),int(item.position.y), 
                                                         item.width, item.height)
             sdl.SDL_RenderTexture(self.game.getRenderer(), item.texture, None, itemRect)
+
+    def initMusic(self) -> None:
+        self.sounds["bgm"] = sdl.MIX_LoadAudio(self.game.getMixer(), 
+                                                f"D:/PyProjects/SpacePlane/assets/music/03_Racing_Through_Asteroids_Loop.ogg".encode(),False)
+        self.sounds["player_shoot"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
+                                                b"D:/PyProjects/SpacePlane/assets/sound/laser_shoot4.wav",False)
+        self.sounds["enemy_shoot"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
+                                                b"D:/PyProjects/SpacePlane/assets/sound/xs_laser.wav",False)
+        self.sounds["player_explode"] = sdl.MIX_LoadAudio(self.game.getMixer(),
+                                                b"D:/PyProjects/SpacePlane/assets/sound/explosion1.wav",False)
+        self.sounds["enemy_explode"] = sdl.MIX_LoadAudio(self.game.getMixer(),
+                                                b"D:/PyProjects/SpacePlane/assets/sound/explosion3.wav",False)
+        self.sounds["hit"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
+                                                b"D:/PyProjects/SpacePlane/assets/sound/eff11.wav",False)
+        self.sounds["get_item"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
+                                                b"D:/PyProjects/SpacePlane/assets/sound/eff5.wav",False)
+
+    def playSoundByName(self, name: str) -> None:
+        if name not in self.sounds:
+            log.error("Sound {} not found!", name)
+            return
+
+        sound = self.sounds[name]
+        if name == "bgm":
+            props = sdl.SDL_CreateProperties()
+            ok = sdl.SDL_SetNumberProperty(props, mix.MIX_PROP_PLAY_LOOPS_NUMBER, -1) # 无限循环
+            if not ok:
+                log.error("Failed to set property for sound {}: {}", name, sdl.SDL_GetError())
+
+            mix.MIX_SetTrackAudio(self.game.getBGMTrack(), sound)
+            isPlayBack = sdl.MIX_PlayTrack(self.game.getBGMTrack(), props)
+            if not isPlayBack:
+                log.error("Failed to play sound {}: {}", name, sdl.SDL_GetError())
+
+        else:
+            mix.MIX_SetTrackAudio(self.game.getMusicTrack(), sound)
+            isPlayBack = sdl.MIX_PlayTrack(self.game.getMusicTrack(), 0)
+            if not isPlayBack:
+                log.error("Failed to play sound {}: {}", name, sdl.SDL_GetError())
