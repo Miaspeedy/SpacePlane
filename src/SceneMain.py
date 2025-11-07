@@ -21,6 +21,7 @@ class SceneMain(Scene):
         super().__init__(game)
         seed = secrets.randbits(64)
         self.rng = random.Random(seed)
+        self.uiHealth = None
         self.player = Player()  
         self.isDead = False    
         self.projectilePlayerTemplate = ProjectilePlayer()
@@ -42,6 +43,12 @@ class SceneMain(Scene):
 
         # 播放背景音乐
         self.playSoundByName("bgm")
+
+        # 初始化UI
+        self.uiHealth = img.IMG_LoadTexture(
+            self.game.getRenderer(),
+            b"D:/PyProjects/SpacePlane/assets/image/Health_UI_Black.png",
+        )
 
         # todo 改为相对位置
         self.player.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/SpaceShip.png")
@@ -128,9 +135,15 @@ class SceneMain(Scene):
         # 渲染爆炸效果
         self.renderExplosions()
 
+        # 渲染UI
+        self.renderUI()
+
     def clean(self) -> None:
         if self.player.texture is not None:
             sdl.SDL_DestroyTexture(self.player.texture)
+
+        if self.uiHealth is not None:
+            sdl.SDL_DestroyTexture(self.uiHealth)
 
         # 清理模板
         if self.projectilePlayerTemplate.texture is not None:
@@ -365,15 +378,8 @@ class SceneMain(Scene):
             projectileRect = sdl.SDL_FRect(int(projectile.position.x),int(projectile.position.y), 
                                                         projectile.width, projectile.height)
             angle = math.degrees(math.atan2(projectile.direction.y, projectile.direction.x)) - 90
-            sdl.SDL_RenderTextureRotated(
-                self.game.getRenderer(),
-                projectile.texture,
-                None,
-                projectileRect,
-                angle,
-                None,
-                False
-            )
+            sdl.SDL_RenderTextureRotated(self.game.getRenderer(),projectile.texture,
+                None,projectileRect,angle,None,False)
 
     def enemyShoot(self, enemy: Enemy) -> None:
         projectile = ProjectileEnemy()
@@ -549,3 +555,20 @@ class SceneMain(Scene):
             isPlayBack = sdl.MIX_PlayTrack(self.game.getMusicTrack(), 0)
             if not isPlayBack:
                 log.error("Failed to play sound {}: {}", name, sdl.SDL_GetError())
+
+    def renderUI(self) -> None:
+        x = 10
+        y = 10
+        size = 32
+        offset = 40
+        sdl.SDL_SetTextureColorMod(self.uiHealth, 100, 100, 100) #颜色减淡
+        for i in range(self.player.maxHealth):        
+            BackRect = sdl.SDL_FRect(x + i * offset, y, size, size)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, BackRect)
+        
+        sdl.SDL_SetTextureColorMod(self.uiHealth, 255, 255, 255) #当前剩余血量
+        for i in range(self.player.currentHealth): 
+            currentRect = sdl.SDL_FRect(x + i * offset, y, size, size)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, currentRect)
+        
+
