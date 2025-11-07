@@ -80,6 +80,11 @@ class Game:
         sdl.MIX_SetTrackGain(self.bgmTrack, 0.5)
         sdl.MIX_SetTrackGain(self.musicTrack, 0.4)
 
+        # 初始化SDL_ttf
+        if ttf.TTF_Init() == -1:
+            self.isRunning = False
+            log.error("SDL_ttf could not initialize! SDL_ttf Error: {}", ttf.TTF_GetError())
+
         # 初始化背景卷轴
         w = c_float()
         h = c_float()
@@ -115,6 +120,8 @@ class Game:
         sdl.MIX_DestroyTrack(self.musicTrack)
         sdl.MIX_DestroyMixer(self.mixer)
         sdl.MIX_Quit()
+
+        sdl.TTF_Quit()
 
         sdl.SDL_DestroyRenderer(self.renderer)
         sdl.SDL_DestroyWindow(self.window)

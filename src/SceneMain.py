@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 import sdl3 as sdl
 from sdl3 import SDL_image as img
 from sdl3 import SDL_mixer as mix
+from sdl3 import SDL_ttf as ttf
 from ctypes import c_float, byref
 import random
 import secrets  # 用于获取高质量随机种子
@@ -22,6 +23,8 @@ class SceneMain(Scene):
         seed = secrets.randbits(64)
         self.rng = random.Random(seed)
         self.uiHealth = None
+        self.scoreFont = None
+        self.score:Optional[int] = 0
         self.player = Player()  
         self.isDead = False    
         self.projectilePlayerTemplate = ProjectilePlayer()
@@ -49,6 +52,9 @@ class SceneMain(Scene):
             self.game.getRenderer(),
             b"D:/PyProjects/SpacePlane/assets/image/Health_UI_Black.png",
         )
+
+        # 载入字体
+        self.scoreFont = ttf.TTF_OpenFont(b"D:/PyProjects/SpacePlane/assets/font/VonwaonBitmap-12px.ttf", 24)
 
         # todo 改为相对位置
         self.player.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/SpaceShip.png")
@@ -144,6 +150,9 @@ class SceneMain(Scene):
 
         if self.uiHealth is not None:
             sdl.SDL_DestroyTexture(self.uiHealth)
+
+        if self.scoreFont is not None:
+            ttf.TTF_CloseFont(self.scoreFont)
 
         # 清理模板
         if self.projectilePlayerTemplate.texture is not None:
@@ -412,6 +421,9 @@ class SceneMain(Scene):
         explosion.position.y = (enemy.position.y + enemy.height / 2 - explosion.height / 2)
         explosion.startTime = currentTime
         self.explosions.append(explosion)
+
+        self.score += 10
+
         self.playSoundByName("enemy_explode")
 
         # 随机生成物品
@@ -506,6 +518,7 @@ class SceneMain(Scene):
                     self.playSoundByName("get_item")
 
     def playerGetItem(self, item: Item) -> None:
+        self.score += 5
         if item.type == ItemType.Life:
             self.player.currentHealth += 1
             if self.player.currentHealth > self.player.maxHealth:
@@ -557,6 +570,7 @@ class SceneMain(Scene):
                 log.error("Failed to play sound {}: {}", name, sdl.SDL_GetError())
 
     def renderUI(self) -> None:
+        # 渲染血量
         x = 10
         y = 10
         size = 32
@@ -565,10 +579,22 @@ class SceneMain(Scene):
         for i in range(self.player.maxHealth):        
             BackRect = sdl.SDL_FRect(x + i * offset, y, size, size)
             sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, BackRect)
-        
+
         sdl.SDL_SetTextureColorMod(self.uiHealth, 255, 255, 255) #当前剩余血量
         for i in range(self.player.currentHealth): 
             currentRect = sdl.SDL_FRect(x + i * offset, y, size, size)
             sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, currentRect)
-        
 
+        # 渲染分数
+        text = f"Score: {self.score}"
+        scoreColor = sdl.SDL_Color(255, 255, 255, 255)
+        surface = ttf.TTF_RenderText_Solid(self.scoreFont, text.encode("utf-8"),len(text.encode("utf-8")), scoreColor)
+        surfaceRect = sdl.SDL_Rect()
+        sdl.SDL_GetSurfaceClipRect(surface,surfaceRect)
+        scoreTexture = sdl.SDL_CreateTextureFromSurface(self.game.getRenderer(), surface)
+        scoreRect = sdl.SDL_FRect(
+            self.game.getWindowWidth() - 10 - surfaceRect.w, 10,
+            surfaceRect.w,surfaceRect.h)
+        sdl.SDL_RenderTexture(self.game.getRenderer(), scoreTexture, None, scoreRect)
+        sdl.SDL_DestroySurface(surface)
+        sdl.SDL_DestroyTexture(scoreTexture)
