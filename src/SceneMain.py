@@ -67,8 +67,8 @@ class SceneMain(Scene):
         if not ok:
             log.error("Failed to get player texture size: {}", sdl.SDL_GetError())
 
-        self.player.width = int(int(w.value) / 4)
-        self.player.height = int(int(h.value) / 4)
+        self.player.width = int(int(w.value) / 5)
+        self.player.height = int(int(h.value) / 5)
 
         self.player.position.x = self.game.getWindowWidth() / 2 - self.player.width / 2
         self.player.position.y = self.game.getWindowHeight() - self.player.height
@@ -88,8 +88,8 @@ class SceneMain(Scene):
 
         self.projectileEnemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), self.game.to_abs_path("assets/image/bullet-1.png").encode())
         ok = sdl.SDL_GetTextureSize(self.projectileEnemyTemplate.texture, byref(w), byref(h))
-        self.projectileEnemyTemplate.width = int(int(w.value) / 4)
-        self.projectileEnemyTemplate.height = int(int(h.value) / 4)
+        self.projectileEnemyTemplate.width = int(int(w.value) / 2)
+        self.projectileEnemyTemplate.height = int(int(h.value) / 2)
 
         self.explosionTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(),
             self.game.to_abs_path("assets/effect/explosion.png").encode())
@@ -97,6 +97,7 @@ class SceneMain(Scene):
         self.explosionTemplate.width = int(w.value)
         self.explosionTemplate.height = int(h.value)
         self.explosionTemplate.totalFrame = (self.explosionTemplate.width / self.explosionTemplate.height)
+        self.explosionTemplate.height = int(self.explosionTemplate.height * 2)
         self.explosionTemplate.width = self.explosionTemplate.height
 
         self.itemLifeTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
@@ -434,24 +435,11 @@ class SceneMain(Scene):
 
     def renderExplosions(self) -> None:
         for explosion in self.explosions:
-            srcRect = sdl.SDL_FRect(
-                int(explosion.currentFrame) * explosion.width,
-                0,
-                explosion.width,
-                explosion.height,
-            )
-            destRect = sdl.SDL_FRect(
-                int(explosion.position.x),
-                int(explosion.position.y),
-                explosion.width,
-                explosion.height,
-            )
-            sdl.SDL_RenderTexture(
-                self.game.getRenderer(),
-                explosion.texture,
-                srcRect,
-                destRect,
-            )
+            srcRect = sdl.SDL_FRect(int(explosion.currentFrame) * explosion.width, 0,
+                explosion.width / 2, explosion.height / 2) # 原始范围扩大了 这里要还原
+            destRect = sdl.SDL_FRect(int(explosion.position.x),int(explosion.position.y),
+                explosion.width, explosion.height)
+            sdl.SDL_RenderTexture(self.game.getRenderer(),explosion.texture,srcRect,destRect)
 
     def renderPlayerProjectiles(self) -> None:
         for projectile in self.projectilesPlayer:

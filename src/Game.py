@@ -21,6 +21,7 @@ class Game:
         self.finalScore: Optional[int] = 0
         self.currentScene: Optional[Scene] = None
         self.isRunning = True
+        self.isFullScreen = False
         self.window:Optional[sdl.SDL_Window] = None
         self.renderer:Optional[sdl.SDL_Renderer] = None
         self.mixer:Optional[sdl.MIX_Mixer] = None
@@ -55,6 +56,10 @@ class Game:
         if not self.renderer:
             self.isRunning = False
             log.error("SDL_CreateRenderer failed")     
+
+        # 设置逻辑分辨率 不管屏幕分辨率 不管屏幕大小
+        sdl.SDL_SetRenderLogicalPresentation(self.getRenderer(),self.windowWidth,self.windowHeight,
+                                             sdl.SDL_LOGICAL_PRESENTATION_INTEGER_SCALE)
 
         # 初始化SDL_mixer
         if not mix.MIX_Init():
@@ -124,6 +129,8 @@ class Game:
         self.currentScene = SceneTitle(self)
         self.currentScene.init()
 
+        self.loadData()
+
     def clean(self):
         if self.currentScene is not None:
             self.currentScene.clean()
@@ -182,11 +189,19 @@ class Game:
                 self.deltaTime = max_dt
 
             # log.debug("FPS: {} ", 1 / self.deltaTime)
+        self.saveData()
 
     def handleEvent(self,event : sdl.SDL_Event):
         while sdl.SDL_PollEvent(event):
             if event.type == sdl.SDL_EVENT_QUIT:
                 self.isRunning = False
+            if event.type == sdl.SDL_EVENT_KEY_DOWN:
+                if event.key.scancode == sdl.SDL_SCANCODE_F11:
+                    self.isFullScreen = not self.isFullScreen
+                    if self.isFullScreen:
+                        sdl.SDL_SetWindowFullscreen(self.window, sdl.SDL_WINDOW_FULLSCREEN)
+                    else:
+                        sdl.SDL_SetWindowFullscreen(self.window, 0)
             self.currentScene.handle_event(event)
 
     def update(self, deltaTime : float):
@@ -299,10 +314,46 @@ class Game:
         if len(self.leaderBoard) > 8:
             self.leaderBoard.pop()
 
+    def saveData(self):
+        path = Path(self.to_abs_path("assets/save.dat"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with path.open("w", encoding="utf-8", newline="\n") as f:
+                for score, name in sorted(self.leaderBoard.items()):
+                    f.write(f"{score} {name}\n")
+        except OSError as e:
+            log.error("[saveData] Failed to open save file: {}", e)
+
+    def loadData(self):
+        path = Path(self.to_abs_path("assets/save.dat"))      
+        if not path.exists():
+            log.info("[loadData] Failed to open save file")
+            return
+
+        self.leaderBoard.clear()
+        try:
+            with path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(maxsplit=1)
+                    if len(parts) != 2:
+                        continue
+                    score_str, name = parts
+                    try:
+                        score = int(score_str)
+                    except ValueError:
+                        continue
+
+                    if score not in self.leaderBoard:
+                        self.leaderBoard[score] = name
+        except OSError as e:
+            log.error("[loadData] Failed to read save file: {}",e)
 
     def to_abs_path(self, rel_path: str) -> str:
-        #把相对路径转为绝对路径(基于当前源码文件所在目录)
-        #若传入本就是绝对路径，则直接返回标准化后的绝对路径。   
+        # 把相对路径转为绝对路径(基于当前源码文件所在目录)
+        # 若传入本就是绝对路径，则直接返回标准化后的绝对路径。
         p = Path(rel_path)
         if p.is_absolute():
             return str(p.resolve())
