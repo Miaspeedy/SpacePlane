@@ -11,6 +11,7 @@ import math
 
 from Logger import GameLogger as log
 from Scene import Scene
+from SceneEnd import SceneEnd
 from Object import Player, ProjectilePlayer, Enemy, ProjectileEnemy, Explosion, ItemType, Item
 
 if TYPE_CHECKING:
@@ -27,6 +28,7 @@ class SceneMain(Scene):
         self.score:Optional[int] = 0
         self.player = Player()  
         self.isDead = False    
+        self.timerEnd = 0.0
         self.projectilePlayerTemplate = ProjectilePlayer()
         self.projectileEnemyTemplate = ProjectileEnemy()
         self.enemyTemplate = Enemy()
@@ -119,6 +121,8 @@ class SceneMain(Scene):
         self.updatePlayer(deltaTime)
         self.updateExplosions(deltaTime)
         self.updateItems(deltaTime)
+        if self.isDead == True:
+            self.changeSceneDelayed(deltaTime, 3)
 
     def render(self) -> None:
         # 渲染玩家子弹
@@ -590,3 +594,9 @@ class SceneMain(Scene):
             isPlayBack = sdl.MIX_PlayTrack(self.game.getMusicTrack(), 0)
             if not isPlayBack:
                 log.error("Failed to play sound {}: {}", name, sdl.SDL_GetError())
+
+    def changeSceneDelayed(self, deltaTime: float, delay: float) -> None:
+        self.timerEnd += deltaTime
+        if self.timerEnd > delay:
+            sceneEnd = SceneEnd(self.game)
+            self.game.changeScene(sceneEnd)
