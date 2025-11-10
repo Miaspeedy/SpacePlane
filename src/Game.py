@@ -22,6 +22,7 @@ class Game:
         self.currentScene: Optional[Scene] = None
         self.isRunning = True
         self.isFullScreen = False
+        self.currentLanguage = "en"
         self.window:Optional[sdl.SDL_Window] = None
         self.renderer:Optional[sdl.SDL_Renderer] = None
         self.mixer:Optional[sdl.MIX_Mixer] = None
@@ -32,11 +33,16 @@ class Game:
         self.titleFont: Optional[sdl.TTF_Font] = None
         self.textFont: Optional[sdl.TTF_Font] = None
         self.leaderBoard = {}
+        self.language = ["en","zh"]
+        self.localizeLib = {}
 
     def init(self):
         # 初始化 logger
         log.set_level("Debug")
         log.set_detailed(False)
+
+        # 初始化本地化
+        self.initLocalizer()
 
         self.frameTime = 1000000000.0 / self.FPS
 
@@ -251,6 +257,16 @@ class Game:
     def getLeaderBoard(self):
         return self.leaderBoard
 
+    def getCurrentLanguage(self):
+        return self.currentLanguage
+
+    def switchLanguage(self):
+        try:
+            i = self.language.index(self.currentLanguage)
+            self.currentLanguage = self.language[(i + 1) % len(self.language)]
+        except ValueError:
+            return
+
     def backgroundUpdate(self, deltaTime : float):
         self.nearStars.offset += self.nearStars.speed * deltaTime
         if self.nearStars.offset >= 0:  
@@ -379,3 +395,23 @@ class Game:
         # 确保目录存在
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
+
+    def initLocalizer(self):
+        self.localizeLib.clear()
+        self.localizeLib["gameName"] = {"zh":"太空战机","en":"Space Plane"}
+        self.localizeLib["titleStart"] = {"zh": "按 空格 键开始游戏","en":"Press SPACE key to Start Game"}
+        self.localizeLib["titleChangeLang"] = {"zh": "按 K 键切换语言","en":"Press K key to change Language"}
+        self.localizeLib["endScore"] = {"zh": "你的得分是: ", "en": "Your Score is: "}
+        self.localizeLib["gameOver"] = {"zh": "游戏结束", "en": "Game Over"}
+        self.localizeLib["inputName"] = {"zh": "请输入你的名字", "en": "Please enter your name,"}
+        self.localizeLib["ensureName"] = {"zh": "并按回车键确认:", "en": "and press the Enter key to confirm: "}
+        self.localizeLib["scoreList"] = {"zh": "得分榜", "en": "Score List"}
+        self.localizeLib["restartGame"] = {"zh": "按 J 键重新开始游戏", "en": "Press the J key to restart game"}
+        self.localizeLib["score"] = {"zh": "得分: ", "en": "Score: "}
+
+    def localizer(self, key:str) -> str:
+        enter = self.localizeLib.get(key)
+        if not enter:
+            return key
+
+        return self.localizeLib[key][self.currentLanguage]

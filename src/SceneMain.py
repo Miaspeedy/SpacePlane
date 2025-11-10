@@ -419,7 +419,7 @@ class SceneMain(Scene):
             )
 
         # 渲染分数
-        text = f"Score: {self.score}"
+        text = self.game.localizer("score") + str(self.score)
         scoreColor = sdl.SDL_Color(255, 255, 255, 255)
         surface = ttf.TTF_RenderText_Solid(
             self.scoreFont, text.encode("utf-8"), len(text.encode("utf-8")), scoreColor

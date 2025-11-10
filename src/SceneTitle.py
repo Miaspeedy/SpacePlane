@@ -38,13 +38,15 @@ class SceneTitle(Scene):
 
     def render(self) -> None:
         # 渲染标题文字
-        titleText = f"Space Plane"#太空战机
+        titleText = self.game.localizer("gameName")
         self.game.renderTextCentered(titleText, 0.4, True)
 
         # 渲染普通文字
-        if self.timer < 0.5:
-            instructions = f"Press SPACE key to Start Game"  # 按 空格 键开始游戏
-            self.game.renderTextCentered(instructions, 0.8, False)
+        if self.timer < 0.5:           
+            instructions = self.game.localizer("titleStart")
+            self.game.renderTextCentered(instructions, 0.6, False)
+            changeLang = self.game.localizer("titleChangeLang")
+            self.game.renderTextCentered(changeLang, 0.7, False)  # 
 
     def clean(self) -> None:
         if self.bgm is not None:
@@ -55,3 +57,5 @@ class SceneTitle(Scene):
             if event.key.scancode == sdl.SDL_SCANCODE_SPACE:
                 sceneMain = SceneMain(self.game)
                 self.game.changeScene(sceneMain)
+            if event.key.scancode == sdl.SDL_SCANCODE_K:
+                self.game.switchLanguage()

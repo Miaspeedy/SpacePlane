@@ -45,7 +45,7 @@ class SceneEnd(Scene):
                 for ch in s:
                     self.name.append(ch)              # list[str]
             if event.type == sdl.SDL_EVENT_KEY_DOWN:
-                if event.key.scancode == sdl.SDL_SCANCODE_RETURN:
+                if event.key.scancode == sdl.SDL_SCANCODE_RETURN or event.key.scancode == sdl.SDL_SCANCODE_KP_ENTER:
                     self.isTyping = False
                     sdl.SDL_StopTextInput(self.game.getWindow())
                     if len(self.name) == 0:
@@ -64,10 +64,10 @@ class SceneEnd(Scene):
 
     def renderPhase1(self) -> None:
         score = self.game.getFinalScore()
-        scoreText = f"Your Score is: " + str(score)  # 你的得分是:
-        gameOver = f"Game Over"
-        instrutionText = f"Please enter your name,"  # 请输入你的名字,
-        instrutionText1 = f"and press the Enter key to confirm: "  # 按回车键确认:
+        scoreText = self.game.localizer("endScore") + str(score)
+        gameOver = self.game.localizer("gameOver")
+        instrutionText = self.game.localizer("inputName")
+        instrutionText1 = self.game.localizer("ensureName")
         self.game.renderTextCentered(scoreText, 0.1, False)
         self.game.renderTextCentered(gameOver, 0.4, True)
         self.game.renderTextCentered(instrutionText, 0.6, False)
@@ -83,7 +83,7 @@ class SceneEnd(Scene):
                 self.game.renderTextCentered("_", 0.8, False);       
 
     def renderPhase2(self) -> None:
-        self.game.renderTextCentered("Score List", 0.05, True)# 得分榜
+        self.game.renderTextCentered(self.game.localizer("scoreList"), 0.05, True) # 得分榜
         posY = 0.2 * self.game.getWindowHeight()
         i = 1
         leaderBoard = self.game.getLeaderBoard()
@@ -96,4 +96,4 @@ class SceneEnd(Scene):
             i += 1
 
         if self.blinkTimer < 0.5:
-            self.game.renderTextCentered("Press the J key to restart game", 0.85, False) #按 J 键重新开始游戏
+            self.game.renderTextCentered(self.game.localizer("restartGame"), 0.85, False)  # 按 J 键重新开始游戏
