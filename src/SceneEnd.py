@@ -13,6 +13,7 @@ class SceneEnd(Scene):
     def __init__(self, game: Game) -> None:
         super().__init__(game)
         self.isTyping = True
+        self.blinkTimer = 1.0
         self.name = []
 
     def init(self) -> None:
@@ -24,7 +25,9 @@ class SceneEnd(Scene):
             log.error("Failed to start text input:{}", sdl.SDL_GetError())
 
     def update(self, deltaTime: float) -> None:
-        pass
+        self.blinkTimer -= deltaTime
+        if self.blinkTimer <= 0:
+            self.blinkTimer += 1.0
 
     def render(self) -> None:
         if self.isTyping:
@@ -62,7 +65,12 @@ class SceneEnd(Scene):
 
         if len(self.name) != 0:
             textname = "".join(self.name)
-            self.game.renderTextCentered(textname, 0.8, False)
+            p = self.game.renderTextCentered(textname, 0.8, False)
+            if self.blinkTimer < 0.5:
+                self.game.renderTextPos("_", p.x, p.y)
+        else:
+            if self.blinkTimer < 0.5:
+                self.game.renderTextCentered("_", 0.8, False);       
 
     def renderPhase2(self) -> None:
         pass

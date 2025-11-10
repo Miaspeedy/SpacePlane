@@ -265,6 +265,18 @@ class Game:
         sdl.SDL_RenderTexture(self.getRenderer(), texture, None, scoreRect)
         sdl.SDL_DestroySurface(surface)
         sdl.SDL_DestroyTexture(texture)
+        return sdl.SDL_Point(int(scoreRect.x) + int(scoreRect.w), y)
+
+    def renderTextPos(self, text: str, posX: int, posY: int):  
+        color = sdl.SDL_Color(255, 255, 255, 255)
+        surface = ttf.TTF_RenderText_Solid(self.textFont, text.encode("utf-8"), len(text.encode("utf-8")), color)
+        surfaceRect = sdl.SDL_Rect()
+        sdl.SDL_GetSurfaceClipRect(surface, surfaceRect)      
+        finalRect = sdl.SDL_FRect(posX, posY, surfaceRect.w, surfaceRect.h)
+        texture = sdl.SDL_CreateTextureFromSurface(self.getRenderer(), surface)
+        sdl.SDL_RenderTexture(self.getRenderer(), texture, None, finalRect)
+        sdl.SDL_DestroySurface(surface)
+        sdl.SDL_DestroyTexture(texture)
 
     def setFinalScore(self, score: int):
         self.finalScore = score
