@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 import sdl3 as sdl
 from sdl3 import SDL_mixer as mix
-from sdl3 import SDL_ttf as ttf
 from ctypes import byref
 
 from Logger import GameLogger as log
@@ -21,8 +20,7 @@ class SceneTitle(Scene):
 
     def init(self) -> None:
         # 载入并播放背景音乐
-        self.bgm = sdl.MIX_LoadAudio(self.game.getMixer(),
-                            f"D:/PyProjects/SpacePlane/assets/music/06_Battle_in_Space_Intro.ogg".encode(),False)
+        self.bgm = sdl.MIX_LoadAudio(self.game.getMixer(), self.game.to_abs_path("assets/music/06_Battle_in_Space_Intro.ogg").encode(), False)
         props = sdl.SDL_CreateProperties()
         ok = sdl.SDL_SetNumberProperty(props, mix.MIX_PROP_PLAY_LOOPS_NUMBER, -1) # 无限循环
         if not ok:

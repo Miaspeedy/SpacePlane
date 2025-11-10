@@ -3,6 +3,7 @@ from sdl3 import SDL_ttf as ttf
 from sdl3 import SDL_mixer as mix
 from typing import Optional
 from ctypes import c_float, byref
+from pathlib import Path
 
 from Logger import GameLogger as log
 from Scene import Scene
@@ -93,7 +94,7 @@ class Game:
         w = c_float()
         h = c_float()
         self.nearStars = Background()
-        self.nearStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),b"D:/PyProjects/SpacePlane/assets/image/Stars-A.png")
+        self.nearStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),self.to_abs_path("assets/image/Stars-A.png").encode())
         if self.nearStars.texture is None:
             self.isRunning = False
             log.error("SDL_image could not initialize! SDL_image Error:: {}",ttf.TTF_GetError())
@@ -103,7 +104,7 @@ class Game:
         self.nearStars.height = int(h.value / 2)
 
         self.farStars = Background()
-        self.farStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),b"D:/PyProjects/SpacePlane/assets/image/Stars-B.png")
+        self.farStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),self.to_abs_path("assets/image/Stars-B.png").encode())
         if self.farStars.texture is None:
             self.isRunning = False
             log.error("SDL_image could not initialize! SDL_image Error:: {}",ttf.TTF_GetError())
@@ -114,8 +115,8 @@ class Game:
         self.farStars.speed = 20
 
         # 载入标题场景字体
-        self.titleFont = ttf.TTF_OpenFont(b"D:/PyProjects/SpacePlane/assets/font/VonwaonBitmap-16px.ttf", 64)
-        self.textFont = ttf.TTF_OpenFont(b"D:/PyProjects/SpacePlane/assets/font/VonwaonBitmap-16px.ttf", 32)
+        self.titleFont = ttf.TTF_OpenFont(self.to_abs_path("assets/font/VonwaonBitmap-16px.ttf").encode(), 64)
+        self.textFont = ttf.TTF_OpenFont(self.to_abs_path("assets/font/VonwaonBitmap-16px.ttf").encode(), 32)
         if self.titleFont is None or self.textFont is None:
             self.isRunning = False
             log.error("SDL_ttf could not initialize! SDL_ttf Error:: {}",ttf.TTF_GetError())        
@@ -297,3 +298,13 @@ class Game:
         self.leaderBoard[score] = name
         if len(self.leaderBoard) > 8:
             self.leaderBoard.pop()
+
+
+    def to_abs_path(self, rel_path: str) -> str:
+        #把相对路径转为绝对路径(基于当前源码文件所在目录)
+        #若传入本就是绝对路径，则直接返回标准化后的绝对路径。   
+        p = Path(rel_path)
+        if p.is_absolute():
+            return str(p.resolve())
+        base = Path(__file__).resolve().parent.parent
+        return str((base / p).resolve())

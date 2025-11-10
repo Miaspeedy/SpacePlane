@@ -50,16 +50,13 @@ class SceneMain(Scene):
         self.playSoundByName("bgm")
 
         # 初始化UI
-        self.uiHealth = img.IMG_LoadTexture(
-            self.game.getRenderer(),
-            b"D:/PyProjects/SpacePlane/assets/image/Health_UI_Black.png",
-        )
+        self.uiHealth = img.IMG_LoadTexture(self.game.getRenderer(),
+            self.game.to_abs_path("assets/image/Health_UI_Black.png").encode())
 
         # 载入字体
-        self.scoreFont = ttf.TTF_OpenFont(b"D:/PyProjects/SpacePlane/assets/font/VonwaonBitmap-12px.ttf", 24)
+        self.scoreFont = ttf.TTF_OpenFont(self.game.to_abs_path("assets/font/VonwaonBitmap-12px.ttf").encode(), 24)
 
-        # todo 改为相对位置
-        self.player.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/SpaceShip.png")
+        self.player.texture = img.IMG_LoadTexture(self.game.getRenderer(), self.game.to_abs_path("assets/image/SpaceShip.png").encode())
 
         if self.player.texture is None:
             log.error("Failed to load player texture: {}",sdl.SDL_GetError())
@@ -77,37 +74,33 @@ class SceneMain(Scene):
         self.player.position.y = self.game.getWindowHeight() - self.player.height
 
         # 初始化模版
-        self.projectilePlayerTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/laser-1.png")
+        self.projectilePlayerTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), 
+                                                                    self.game.to_abs_path("assets/image/laser-1.png").encode())
         ok = sdl.SDL_GetTextureSize(self.projectilePlayerTemplate.texture, byref(w), byref(h))
         self.projectilePlayerTemplate.width = int(int(w.value) / 4)
         self.projectilePlayerTemplate.height = int(int(h.value) / 4)
 
-        self.enemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/insect-2.png")
+        self.enemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), 
+                                                         self.game.to_abs_path("assets/image/insect-2.png").encode())
         ok = sdl.SDL_GetTextureSize(self.enemyTemplate.texture, byref(w), byref(h))
         self.enemyTemplate.width = int(int(w.value) / 4)
         self.enemyTemplate.height = int(int(h.value) / 4)
 
-        self.projectileEnemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), b"D:/PyProjects/SpacePlane/assets/image/bullet-1.png")
+        self.projectileEnemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), self.game.to_abs_path("assets/image/bullet-1.png").encode())
         ok = sdl.SDL_GetTextureSize(self.projectileEnemyTemplate.texture, byref(w), byref(h))
         self.projectileEnemyTemplate.width = int(int(w.value) / 4)
         self.projectileEnemyTemplate.height = int(int(h.value) / 4)
 
-        self.explosionTemplate.texture = img.IMG_LoadTexture(
-            self.game.getRenderer(),
-            b"D:/PyProjects/SpacePlane/assets/effect/explosion.png",
-        )
+        self.explosionTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(),
+            self.game.to_abs_path("assets/effect/explosion.png").encode())
         ok = sdl.SDL_GetTextureSize(self.explosionTemplate.texture, byref(w), byref(h))
         self.explosionTemplate.width = int(w.value)
         self.explosionTemplate.height = int(h.value)
-        self.explosionTemplate.totalFrame = (
-            self.explosionTemplate.width / self.explosionTemplate.height
-        )
+        self.explosionTemplate.totalFrame = (self.explosionTemplate.width / self.explosionTemplate.height)
         self.explosionTemplate.width = self.explosionTemplate.height
 
-        self.itemLifeTemplate.texture = sdl.IMG_LoadTexture(
-            self.game.getRenderer(),
-            b"D:/PyProjects/SpacePlane/assets/image/bonus_life.png",
-        )
+        self.itemLifeTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+                                                            self.game.to_abs_path("assets/image/bonus_life.png").encode())
         ok = sdl.SDL_GetTextureSize(self.itemLifeTemplate.texture, byref(w), byref(h))
         self.itemLifeTemplate.width = int(w.value / 4)
         self.itemLifeTemplate.height = int(h.value / 4)
@@ -559,19 +552,19 @@ class SceneMain(Scene):
 
     def initMusic(self) -> None:
         self.sounds["bgm"] = sdl.MIX_LoadAudio(self.game.getMixer(), 
-                                                f"D:/PyProjects/SpacePlane/assets/music/03_Racing_Through_Asteroids_Loop.ogg".encode(),False)
-        self.sounds["player_shoot"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
-                                                b"D:/PyProjects/SpacePlane/assets/sound/laser_shoot4.wav",False)
-        self.sounds["enemy_shoot"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
-                                                b"D:/PyProjects/SpacePlane/assets/sound/xs_laser.wav",False)
+                                                self.game.to_abs_path("assets/music/03_Racing_Through_Asteroids_Loop.ogg").encode(), False)
+        self.sounds["player_shoot"] = sdl.MIX_LoadAudio(self.game.getMixer(), 
+                                                self.game.to_abs_path("assets/sound/laser_shoot4.wav").encode(), False)
+        self.sounds["enemy_shoot"] = sdl.MIX_LoadAudio(self.game.getMixer(), 
+                                                self.game.to_abs_path("assets/sound/xs_laser.wav").encode(), False)
         self.sounds["player_explode"] = sdl.MIX_LoadAudio(self.game.getMixer(),
-                                                b"D:/PyProjects/SpacePlane/assets/sound/explosion1.wav",False)
+                                                self.game.to_abs_path("assets/sound/explosion1.wav").encode(), False)
         self.sounds["enemy_explode"] = sdl.MIX_LoadAudio(self.game.getMixer(),
-                                                b"D:/PyProjects/SpacePlane/assets/sound/explosion3.wav",False)
-        self.sounds["hit"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
-                                                b"D:/PyProjects/SpacePlane/assets/sound/eff11.wav",False)
-        self.sounds["get_item"] = sdl.MIX_LoadAudio( self.game.getMixer(), 
-                                                b"D:/PyProjects/SpacePlane/assets/sound/eff5.wav",False)
+                                                self.game.to_abs_path("assets/sound/explosion3.wav").encode(), False)
+        self.sounds["hit"] = sdl.MIX_LoadAudio(self.game.getMixer(), 
+                                                self.game.to_abs_path("assets/sound/eff11.wav").encode(), False)
+        self.sounds["get_item"] = sdl.MIX_LoadAudio(self.game.getMixer(), 
+                                                self.game.to_abs_path("assets/sound/eff5.wav").encode(), False)
 
     def playSoundByName(self, name: str) -> None:
         if name not in self.sounds:
