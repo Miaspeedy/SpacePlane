@@ -6,7 +6,7 @@ from ctypes import c_float, byref
 
 from Logger import GameLogger as log
 from Scene import Scene
-from SceneMain import SceneMain
+from SceneTitle import SceneTitle
 from Object import GlobalObject,Background
 
 class Game:
@@ -26,6 +26,8 @@ class Game:
         self.musicTrack: Optional[sdl.MIX_Track] = None
         self.nearStars = None
         self.farStars = None
+        self.titleFont: Optional[sdl.TTF_Font] = None
+        self.textFont: Optional[sdl.TTF_Font] = None
 
     def init(self):
         # 初始化 logger
@@ -90,18 +92,33 @@ class Game:
         h = c_float()
         self.nearStars = Background()
         self.nearStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),b"D:/PyProjects/SpacePlane/assets/image/Stars-A.png")
+        if self.nearStars.texture is None:
+            self.isRunning = False
+            log.error("SDL_image could not initialize! SDL_image Error:: {}",ttf.TTF_GetError())
+
         sdl.SDL_GetTextureSize(self.nearStars.texture, byref(w), byref(h))
         self.nearStars.width = int(w.value / 2)
         self.nearStars.height = int(h.value / 2)
 
         self.farStars = Background()
         self.farStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),b"D:/PyProjects/SpacePlane/assets/image/Stars-B.png")
+        if self.farStars.texture is None:
+            self.isRunning = False
+            log.error("SDL_image could not initialize! SDL_image Error:: {}",ttf.TTF_GetError())
+
         sdl.SDL_GetTextureSize(self.farStars.texture, byref(w), byref(h))
         self.farStars.width = int(w.value / 2)
         self.farStars.height = int(h.value / 2)
         self.farStars.speed = 20
 
-        self.currentScene = SceneMain(self)
+        # 载入标题场景字体
+        self.titleFont = ttf.TTF_OpenFont(b"D:/PyProjects/SpacePlane/assets/font/VonwaonBitmap-16px.ttf", 64)
+        self.textFont = ttf.TTF_OpenFont(b"D:/PyProjects/SpacePlane/assets/font/VonwaonBitmap-16px.ttf", 32)
+        if self.titleFont is None or self.textFont is None:
+            self.isRunning = False
+            log.error("SDL_ttf could not initialize! SDL_ttf Error:: {}",ttf.TTF_GetError())        
+
+        self.currentScene = SceneTitle(self)
         self.currentScene.init()
 
     def clean(self):
@@ -115,6 +132,12 @@ class Game:
         if self.farStars is not None:
             sdl.SDL_DestroyTexture(self.farStars.texture)
             self.farStars = None
+
+        if self.titleFont is not None:
+            ttf.TTF_CloseFont(self.titleFont)
+
+        if self.textFont is not None:
+            ttf.TTF_CloseFont(self.textFont)
 
         sdl.MIX_DestroyTrack(self.bgmTrack)
         sdl.MIX_DestroyTrack(self.musicTrack)
@@ -204,7 +227,7 @@ class Game:
         self.nearStars.offset += self.nearStars.speed * deltaTime
         if self.nearStars.offset >= 0:  
             self.nearStars.offset -= self.nearStars.height
-   
+
         self.farStars.offset += self.farStars.speed * deltaTime
         if self.farStars.offset >= 0:
             self.farStars.offset -= self.farStars.height
@@ -221,4 +244,20 @@ class Game:
             for posX in range(0, self.getWindowWidth(), int(self.nearStars.width)):
                 dstRect = sdl.SDL_FRect(posX, posY, self.nearStars.width, self.nearStars.height)
                 sdl.SDL_RenderTexture(self.getRenderer(), self.nearStars.texture, None, dstRect)      
-        
+
+    def renderTextCentered(self, text:str, posY:float, isTitle: bool):
+        color = sdl.SDL_Color(255, 255, 255, 255)
+        surface = None
+        if isTitle:
+            surface = ttf.TTF_RenderText_Solid(self.titleFont, text.encode("utf-8"), len(text.encode("utf-8")), color)
+        else:
+            surface = ttf.TTF_RenderText_Solid(self.textFont, text.encode("utf-8"), len(text.encode("utf-8")), color)
+
+        surfaceRect = sdl.SDL_Rect()
+        sdl.SDL_GetSurfaceClipRect(surface, surfaceRect)
+        texture = sdl.SDL_CreateTextureFromSurface(self.getRenderer(), surface)
+        y = int((self.getWindowHeight() - surfaceRect.h) * posY)
+        scoreRect = sdl.SDL_FRect(self.getWindowWidth() / 2 - surfaceRect.w / 2, y, surfaceRect.w,surfaceRect.h)
+        sdl.SDL_RenderTexture(self.getRenderer(), texture, None, scoreRect)
+        sdl.SDL_DestroySurface(surface)
+        sdl.SDL_DestroyTexture(texture)
