@@ -29,6 +29,7 @@ class Game:
         self.farStars = None
         self.titleFont: Optional[sdl.TTF_Font] = None
         self.textFont: Optional[sdl.TTF_Font] = None
+        self.leaderBoard = {}
 
     def init(self):
         # 初始化 logger
@@ -227,6 +228,15 @@ class Game:
     def getMusicTrack(self):
         return self.musicTrack
 
+    def setFinalScore(self, score: int):
+        self.finalScore = score
+
+    def getFinalScore(self) -> int:
+        return self.finalScore
+
+    def getLeaderBoard(self):
+        return self.leaderBoard
+
     def backgroundUpdate(self, deltaTime : float):
         self.nearStars.offset += self.nearStars.speed * deltaTime
         if self.nearStars.offset >= 0:  
@@ -267,19 +277,23 @@ class Game:
         sdl.SDL_DestroyTexture(texture)
         return sdl.SDL_Point(int(scoreRect.x) + int(scoreRect.w), y)
 
-    def renderTextPos(self, text: str, posX: int, posY: int):  
+    def renderTextPos(self, text: str, posX: int, posY: int, isLeft: bool):  
         color = sdl.SDL_Color(255, 255, 255, 255)
         surface = ttf.TTF_RenderText_Solid(self.textFont, text.encode("utf-8"), len(text.encode("utf-8")), color)
-        surfaceRect = sdl.SDL_Rect()
-        sdl.SDL_GetSurfaceClipRect(surface, surfaceRect)      
-        finalRect = sdl.SDL_FRect(posX, posY, surfaceRect.w, surfaceRect.h)
         texture = sdl.SDL_CreateTextureFromSurface(self.getRenderer(), surface)
+        surfaceRect = sdl.SDL_Rect()
+        sdl.SDL_GetSurfaceClipRect(surface, surfaceRect)   
+        finalRect = sdl.SDL_FRect()
+        if isLeft:           
+            finalRect = sdl.SDL_FRect(posX, posY, surfaceRect.w, surfaceRect.h)
+        else:
+            finalRect = sdl.SDL_FRect(self.getWindowWidth() - posX - surfaceRect.w, posY, surfaceRect.w, surfaceRect.h)
+
         sdl.SDL_RenderTexture(self.getRenderer(), texture, None, finalRect)
         sdl.SDL_DestroySurface(surface)
         sdl.SDL_DestroyTexture(texture)
 
-    def setFinalScore(self, score: int):
-        self.finalScore = score
-
-    def getFinalScore(self) -> int:
-        return self.finalScore
+    def insertLeaderBoard(self, score: int, name: str):
+        self.leaderBoard[score] = name
+        if len(self.leaderBoard) > 8:
+            self.leaderBoard.pop()

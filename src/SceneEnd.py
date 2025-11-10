@@ -48,9 +48,19 @@ class SceneEnd(Scene):
                 if event.key.scancode == sdl.SDL_SCANCODE_RETURN:
                     self.isTyping = False
                     sdl.SDL_StopTextInput(self.game.getWindow())
+                    if len(self.name) == 0:
+                        self.name.append("NoName")
+                    textname = "".join(self.name)
+                    self.game.insertLeaderBoard(self.game.getFinalScore(), textname)
                 if event.key.scancode == sdl.SDL_SCANCODE_BACKSPACE:
                     if self.name:
                         self.name.pop()
+        else:
+            if event.type == sdl.SDL_EVENT_KEY_DOWN:
+                if event.key.scancode == sdl.SDL_SCANCODE_J:
+                    from SceneMain import SceneMain
+                    sceneMain = SceneMain(self.game)
+                    self.game.changeScene(sceneMain)
 
     def renderPhase1(self) -> None:
         score = self.game.getFinalScore()
@@ -67,10 +77,23 @@ class SceneEnd(Scene):
             textname = "".join(self.name)
             p = self.game.renderTextCentered(textname, 0.8, False)
             if self.blinkTimer < 0.5:
-                self.game.renderTextPos("_", p.x, p.y)
+                self.game.renderTextPos("_", p.x, p.y, True)
         else:
             if self.blinkTimer < 0.5:
                 self.game.renderTextCentered("_", 0.8, False);       
 
     def renderPhase2(self) -> None:
-        pass
+        self.game.renderTextCentered("Score List", 0.05, True)# 得分榜
+        posY = 0.2 * self.game.getWindowHeight()
+        i = 1
+        leaderBoard = self.game.getLeaderBoard()
+        for item in leaderBoard:
+            name = str(i) + ". " + leaderBoard[item]
+            score = str(item)
+            self.game.renderTextPos(name, 100, posY, True)
+            self.game.renderTextPos(score, 100, posY, False)
+            posY += 45
+            i += 1
+
+        if self.blinkTimer < 0.5:
+            self.game.renderTextCentered("Press the J key to restart game", 0.85, False) #按 J 键重新开始游戏
