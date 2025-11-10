@@ -17,6 +17,7 @@ class Game:
         self.FPS = self.GlobalSettings.FPS
         self.frameTime = 0.0   
         self.deltaTime = 0.0  
+        self.finalScore: Optional[int] = 0
         self.currentScene: Optional[Scene] = None
         self.isRunning = True
         self.window:Optional[sdl.SDL_Window] = None
@@ -208,6 +209,9 @@ class Game:
     def getRenderer(self):
         return self.renderer
 
+    def getWindow(self):
+        return self.window
+
     def getWindowWidth(self):
         return self.windowWidth
 
@@ -261,3 +265,9 @@ class Game:
         sdl.SDL_RenderTexture(self.getRenderer(), texture, None, scoreRect)
         sdl.SDL_DestroySurface(surface)
         sdl.SDL_DestroyTexture(texture)
+
+    def setFinalScore(self, score: int):
+        self.finalScore = score
+
+    def getFinalScore(self) -> int:
+        return self.finalScore

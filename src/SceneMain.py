@@ -122,7 +122,7 @@ class SceneMain(Scene):
         self.updateExplosions(deltaTime)
         self.updateItems(deltaTime)
         if self.isDead == True:
-            self.changeSceneDelayed(deltaTime, 3)
+            self.changeSceneDelayed(deltaTime, 1)
 
     def render(self) -> None:
         # 渲染玩家子弹
@@ -224,6 +224,7 @@ class SceneMain(Scene):
             explosion.startTime = currentTime
             self.explosions.append(explosion)
             self.playSoundByName("player_explode")
+            self.game.setFinalScore(self.score)
             return
 
         for enemy in self.enemies:
