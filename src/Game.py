@@ -21,8 +21,9 @@ class Game:
         self.finalScore: Optional[int] = 0
         self.currentScene: Optional[Scene] = None
         self.isRunning = True
+        self.isPause = False
         self.isFullScreen = False
-        self.currentLanguage = "en"
+        self.currentLanguage = "zh"
         self.window:Optional[sdl.SDL_Window] = None
         self.renderer:Optional[sdl.SDL_Renderer] = None
         self.mixer:Optional[sdl.MIX_Mixer] = None
@@ -209,6 +210,9 @@ class Game:
             self.currentScene.handle_event(event)
 
     def update(self, deltaTime : float):
+        if self.isPause:
+            deltaTime = 0.0
+
         self.backgroundUpdate(deltaTime)
         self.currentScene.update(deltaTime)
 
@@ -256,6 +260,9 @@ class Game:
 
     def getLeaderBoard(self):
         return self.leaderBoard
+
+    def togglePause(self):
+        self.isPause = not self.isPause
 
     def getCurrentLanguage(self):
         return self.currentLanguage
@@ -400,7 +407,7 @@ class Game:
         self.localizeLib.clear()
         self.localizeLib["gameName"] = {"zh":"太空战机","en":"Space Plane"}
         self.localizeLib["titleStart"] = {"zh": "按 空格 键开始游戏","en":"Press SPACE key to Start Game"}
-        self.localizeLib["titleChangeLang"] = {"zh": "按 K 键切换语言","en":"Press K key to change Language"}
+        self.localizeLib["titleChangeLang"] = {"zh": "按 TAB 键切换语言","en":"Press TAB key to change Language"}
         self.localizeLib["endScore"] = {"zh": "你的得分是: ", "en": "Your Score is: "}
         self.localizeLib["gameOver"] = {"zh": "游戏结束", "en": "Game Over"}
         self.localizeLib["inputName"] = {"zh": "请输入你的名字", "en": "Please enter your name,"}
@@ -408,6 +415,11 @@ class Game:
         self.localizeLib["scoreList"] = {"zh": "得分榜", "en": "Score List"}
         self.localizeLib["restartGame"] = {"zh": "按 J 键重新开始游戏", "en": "Press the J key to restart game"}
         self.localizeLib["score"] = {"zh": "得分: ", "en": "Score: "}
+        self.localizeLib["pause"] = {"zh": "已暂停", "en": "Pause"}
+        self.localizeLib["pauseMove"] = {"zh": "移动: WASD", "en": "Move: WASD"}
+        self.localizeLib["pauseAttack"] = {"zh": "射击: J", "en": "Shoot: J"}
+        self.localizeLib["pauseUse"] = {"zh": "使用道具: K", "en": "Use items: K"}
+        self.localizeLib["pausePause"] = {"zh": "暂停: P", "en": "Pause: P"}
 
     def localizer(self, key:str) -> str:
         enter = self.localizeLib.get(key)

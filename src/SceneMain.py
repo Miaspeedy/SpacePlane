@@ -142,6 +142,9 @@ class SceneMain(Scene):
         # 渲染UI
         self.renderUI()
 
+        # 渲染暂停UI
+        self.renderPause()
+
     def clean(self) -> None:
         if self.player.texture is not None:
             sdl.SDL_DestroyTexture(self.player.texture)
@@ -199,6 +202,10 @@ class SceneMain(Scene):
                 from SceneTitle import SceneTitle
                 sceneTitle = SceneTitle(self.game)
                 self.game.changeScene(sceneTitle)
+            if event.key.scancode == sdl.SDL_SCANCODE_TAB:
+                self.game.switchLanguage()
+            if event.key.scancode == sdl.SDL_SCANCODE_P:
+                self.game.togglePause()
 
     # 更新相关
     def updatePlayer(self, deltaTime: float) -> None:
@@ -432,6 +439,19 @@ class SceneMain(Scene):
         sdl.SDL_RenderTexture(self.game.getRenderer(), scoreTexture, None, scoreRect)
         sdl.SDL_DestroySurface(surface)
         sdl.SDL_DestroyTexture(scoreTexture)
+
+    def renderPause(self) -> None:
+        if self.game.isPause:
+            # 画一层半透明遮罩
+            sdl.SDL_SetRenderDrawBlendMode(self.game.getRenderer(), sdl.SDL_BLENDMODE_BLEND)
+            sdl.SDL_SetRenderDrawColor(self.game.getRenderer(), 0, 0, 0, 128)            
+            rect = sdl.SDL_FRect(0, 0, int(self.game.getWindowWidth()), int(self.game.getWindowHeight()))
+            sdl.SDL_RenderFillRect(self.game.getRenderer(), rect)
+            self.game.renderTextCentered(self.game.localizer("pause"), 0.2, True)
+            self.game.renderTextCentered(self.game.localizer("pauseMove"), 0.4, False)
+            self.game.renderTextCentered(self.game.localizer("pauseAttack"), 0.5, False)
+            self.game.renderTextCentered(self.game.localizer("pauseUse"), 0.6, False)
+            self.game.renderTextCentered(self.game.localizer("pausePause"), 0.7, False)
 
     def renderExplosions(self) -> None:
         for explosion in self.explosions:

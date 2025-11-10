@@ -57,5 +57,5 @@ class SceneTitle(Scene):
             if event.key.scancode == sdl.SDL_SCANCODE_SPACE:
                 sceneMain = SceneMain(self.game)
                 self.game.changeScene(sceneMain)
-            if event.key.scancode == sdl.SDL_SCANCODE_K:
+            if event.key.scancode == sdl.SDL_SCANCODE_TAB:
                 self.game.switchLanguage()
