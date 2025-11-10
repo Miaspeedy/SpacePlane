@@ -52,7 +52,7 @@ class Game:
             log.error("SDL_CreateWindow failed")
 
         # 创建 2D 渲染器
-        self.renderer = sdl.SDL_CreateRenderer(self.window, b"opengl")
+        self.renderer = sdl.SDL_CreateRenderer(self.window, None)
         if not self.renderer:
             self.isRunning = False
             log.error("SDL_CreateRenderer failed")     
@@ -67,9 +67,7 @@ class Game:
             log.error("SDL_mixer initialization failed")
 
         # 选用默认播放设备 音频规格用默认值
-        self.mixer = sdl.MIX_CreateMixerDevice(
-            sdl.SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, None 
-        )  
+        self.mixer = sdl.MIX_CreateMixerDevice(sdl.SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, None)  
         if not self.mixer:
             self.isRunning = False
             log.error("SDL_mixer initialization failed")
@@ -78,12 +76,12 @@ class Game:
         self.bgmTrack = sdl.MIX_CreateTrack(self.mixer)
         if not self.bgmTrack:
             self.isRunning = False
-            log.error("SDL_mixer could not initialize! SDL_mixer Error: {}", mix.Mix_GetError())
+            log.error("SDL_mixer could not initialize! SDL_mixer Error: {}", sdl.SDL_GetError())
 
         self.musicTrack = sdl.MIX_CreateTrack(self.mixer)
         if not self.musicTrack:
             self.isRunning = False
-            log.error("SDL_mixer could not initialize! SDL_mixer Error: {}", mix.Mix_GetError())
+            log.error("SDL_mixer could not initialize! SDL_mixer Error: {}", sdl.SDL_GetError())
 
         # 设置整体音量
         sdl.MIX_SetMasterGain(self.mixer, 0.2)
@@ -93,7 +91,7 @@ class Game:
         # 初始化SDL_ttf
         if ttf.TTF_Init() == -1:
             self.isRunning = False
-            log.error("SDL_ttf could not initialize! SDL_ttf Error: {}", ttf.TTF_GetError())
+            log.error("SDL_ttf could not initialize! SDL_ttf Error: {}", sdl.SDL_GetError())
 
         # 初始化背景卷轴
         w = c_float()
@@ -102,7 +100,7 @@ class Game:
         self.nearStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),self.to_abs_path("assets/image/Stars-A.png").encode())
         if self.nearStars.texture is None:
             self.isRunning = False
-            log.error("SDL_image could not initialize! SDL_image Error:: {}",ttf.TTF_GetError())
+            log.error("SDL_image could not initialize! SDL_image Error:: {}", sdl.SDL_GetError())
 
         sdl.SDL_GetTextureSize(self.nearStars.texture, byref(w), byref(h))
         self.nearStars.width = int(w.value / 2)
@@ -112,7 +110,7 @@ class Game:
         self.farStars.texture = sdl.IMG_LoadTexture(self.getRenderer(),self.to_abs_path("assets/image/Stars-B.png").encode())
         if self.farStars.texture is None:
             self.isRunning = False
-            log.error("SDL_image could not initialize! SDL_image Error:: {}",ttf.TTF_GetError())
+            log.error("SDL_image could not initialize! SDL_image Error:: {}", sdl.SDL_GetError())
 
         sdl.SDL_GetTextureSize(self.farStars.texture, byref(w), byref(h))
         self.farStars.width = int(w.value / 2)
@@ -124,7 +122,7 @@ class Game:
         self.textFont = ttf.TTF_OpenFont(self.to_abs_path("assets/font/VonwaonBitmap-16px.ttf").encode(), 32)
         if self.titleFont is None or self.textFont is None:
             self.isRunning = False
-            log.error("SDL_ttf could not initialize! SDL_ttf Error:: {}",ttf.TTF_GetError())        
+            log.error("SDL_ttf could not initialize! SDL_ttf Error:: {}", sdl.SDL_GetError())        
 
         self.currentScene = SceneTitle(self)
         self.currentScene.init()
@@ -315,8 +313,7 @@ class Game:
             self.leaderBoard.pop()
 
     def saveData(self):
-        path = Path(self.to_abs_path("assets/save.dat"))
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = self._save_path("save.dat")
         try:
             with path.open("w", encoding="utf-8", newline="\n") as f:
                 for score, name in sorted(self.leaderBoard.items()):
@@ -325,7 +322,7 @@ class Game:
             log.error("[saveData] Failed to open save file: {}", e)
 
     def loadData(self):
-        path = Path(self.to_abs_path("assets/save.dat"))      
+        path = self._save_path("save.dat")  
         if not path.exists():
             log.info("[loadData] Failed to open save file")
             return
@@ -353,9 +350,32 @@ class Game:
 
     def to_abs_path(self, rel_path: str) -> str:
         # 把相对路径转为绝对路径(基于当前源码文件所在目录)
-        # 若传入本就是绝对路径，则直接返回标准化后的绝对路径。
+        # 若传入本就是绝对路径，则直接返回标准化后的绝对路径
+        import sys
         p = Path(rel_path)
         if p.is_absolute():
             return str(p.resolve())
-        base = Path(__file__).resolve().parent.parent
+
+        # 冻结态(PyInstaller)
+        if getattr(sys, "frozen", False):
+            base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        else:
+            # 开发态：Game.py 在 src/<pkg>/ 里，资源在项目根的 assets/
+            base = Path(__file__).resolve().parent.parent
+
         return str((base / p).resolve())
+
+    def _app_dir(self):
+        # 返回 EXE 所在目录 开发态则返回项目根(src 的上一层)
+        import sys
+
+        if getattr(sys, "frozen", False):
+            return Path(sys.executable).parent
+        # Game.py 位于 src/<pkg>/Game.py，上一层是 src，再上一层是项目根
+        return Path(__file__).resolve().parent.parent
+
+    def _save_path(self, filename="save.dat"):
+        p = self._app_dir() / filename
+        # 确保目录存在
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
