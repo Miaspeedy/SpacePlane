@@ -579,6 +579,9 @@ class SceneMain(Scene):
             log.error("Sound {} not found!", name)
             return
 
+        if self.game.isPause:
+            return
+        
         sound = self.sounds[name]
         if name == "bgm":
             props = sdl.SDL_CreateProperties()
