@@ -392,7 +392,7 @@ class SceneMain(Scene):
                 self.player.lastShootTime = currentTime
 
     def spawEnemy(self) -> None:
-        if self.game.isPaused:
+        if self.game.isPause:
             return
         if self.rng.random() > 1 / self.game.GlobalSettings.SpawnEnemyStep:
             return

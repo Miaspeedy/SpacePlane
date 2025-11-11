@@ -55,7 +55,7 @@ htmlcov/
 db.sqlite3
 instance/
 *.pem
-.spec/
+*.spec
 
 # --- Framework-specific (uncomment if used) ---
 # Django:
@@ -96,3 +96,4 @@ secrets*.yml
 # --- Docker / Compose (optional) ---
 # docker-compose.override.yml
 # .docker/
+
