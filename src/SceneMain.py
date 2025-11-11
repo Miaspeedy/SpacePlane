@@ -392,6 +392,8 @@ class SceneMain(Scene):
                 self.player.lastShootTime = currentTime
 
     def spawEnemy(self) -> None:
+        if self.game.isPaused:
+            return
         if self.rng.random() > 1 / self.game.GlobalSettings.SpawnEnemyStep:
             return
         # 间隔时间随机生成敌人
@@ -452,6 +454,7 @@ class SceneMain(Scene):
             self.game.renderTextCentered(self.game.localizer("pauseAttack"), 0.5, False)
             self.game.renderTextCentered(self.game.localizer("pauseUse"), 0.6, False)
             self.game.renderTextCentered(self.game.localizer("pausePause"), 0.7, False)
+            self.game.renderTextCentered(self.game.localizer("fullScreen"), 0.8, False)
 
     def renderExplosions(self) -> None:
         for explosion in self.explosions:
@@ -581,7 +584,7 @@ class SceneMain(Scene):
 
         if self.game.isPause:
             return
-        
+
         sound = self.sounds[name]
         if name == "bgm":
             props = sdl.SDL_CreateProperties()
