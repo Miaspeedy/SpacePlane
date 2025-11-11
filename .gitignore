@@ -55,6 +55,7 @@ htmlcov/
 db.sqlite3
 instance/
 *.pem
+.spec/
 
 # --- Framework-specific (uncomment if used) ---
 # Django:
