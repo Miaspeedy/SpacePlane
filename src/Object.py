@@ -9,6 +9,7 @@ class GlobalObject:
         self.windowWidth = 600
         self.windowHeight = 800
         self.FPS = 60
+        self.Version = "0.1.0"
         self.SpawnEnemyStep = 60
         self.LifeItemRate = 0.5  # 生命道具掉落概率
 

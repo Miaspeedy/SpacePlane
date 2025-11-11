@@ -16,6 +16,7 @@ class Game:
         self.windowWidth = self.GlobalSettings.windowWidth
         self.windowHeight = self.GlobalSettings.windowHeight
         self.FPS = self.GlobalSettings.FPS
+        self.Version = self.GlobalSettings.Version
         self.frameTime = 0.0   
         self.deltaTime = 0.0  
         self.finalScore: Optional[int] = 0
@@ -330,6 +331,40 @@ class Game:
         sdl.SDL_DestroySurface(surface)
         sdl.SDL_DestroyTexture(texture)
 
+    def renderTextAtPercent(self, text: str, fontSize: float, posX: float, posY: float, isLeft: bool, isTitle: bool = False):
+        """
+        posX, posY 使用百分比: 0.0~1.0(左上为 0,0;右下为 1,1)
+        isLeft=True  → 以左侧为基准; x = W*posX
+        isLeft=False → 以右侧为基准;x = W*(1-posX) - text_w
+        """
+        color = sdl.SDL_Color(255, 255, 255, 255)
+        b = text.encode("utf-8")
+        Orisize = ttf.TTF_GetFontSize(self.textFont)
+        ttf.TTF_SetFontSize(self.textFont, fontSize * Orisize)
+
+        surface = (ttf.TTF_RenderText_Solid(self.titleFont if isTitle else self.textFont, b, len(b), color))
+        surfaceRect = sdl.SDL_Rect()
+        sdl.SDL_GetSurfaceClipRect(surface, surfaceRect)
+        texture = sdl.SDL_CreateTextureFromSurface(self.getRenderer(), surface)
+
+        W = float(self.getWindowWidth())
+        H = float(self.getWindowHeight())
+
+        # 百分比 → 像素
+        y = H * float(posY)
+        if isLeft:
+            x = W * float(posX)
+        else:
+            x = W * (1.0 - float(posX)) - float(surfaceRect.w)
+
+        dst = sdl.SDL_FRect(float(int(x)), float(int(y)),
+                            float(surfaceRect.w), float(surfaceRect.h))
+        sdl.SDL_RenderTexture(self.getRenderer(), texture, None, dst)
+
+        sdl.SDL_DestroySurface(surface)
+        sdl.SDL_DestroyTexture(texture)
+        ttf.TTF_SetFontSize(self.textFont, Orisize)
+
     def insertLeaderBoard(self, score: int, name: str):
         self.leaderBoard[score] = name
         if len(self.leaderBoard) > 8:
@@ -420,6 +455,8 @@ class Game:
         self.localizeLib["pauseAttack"] = {"zh": "射击: J", "en": "Shoot: J"}
         self.localizeLib["pauseUse"] = {"zh": "使用道具: K", "en": "Use items: K"}
         self.localizeLib["pausePause"] = {"zh": "暂停: P", "en": "Pause: P"}
+        self.localizeLib["version"] = {"zh": "版本: ", "en": "Version: "}
+        self.localizeLib["fullScreen"] = {"zh": "全屏: F11", "en": "Fullscreen: F11"}
 
     def localizer(self, key:str) -> str:
         enter = self.localizeLib.get(key)

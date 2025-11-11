@@ -46,7 +46,10 @@ class SceneTitle(Scene):
             instructions = self.game.localizer("titleStart")
             self.game.renderTextCentered(instructions, 0.6, False)
             changeLang = self.game.localizer("titleChangeLang")
-            self.game.renderTextCentered(changeLang, 0.7, False)  # 
+            self.game.renderTextCentered(changeLang, 0.7, False) 
+
+        versionText = self.game.localizer("version") + self.game.Version
+        self.game.renderTextAtPercent(versionText,0.5, 0.01, 0.95, True)
 
     def clean(self) -> None:
         if self.bgm is not None:
