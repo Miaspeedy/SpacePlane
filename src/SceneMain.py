@@ -455,7 +455,7 @@ class SceneMain(Scene):
 
     def renderExplosions(self) -> None:
         for explosion in self.explosions:
-            srcRect = sdl.SDL_FRect(int(explosion.currentFrame) * explosion.width, 0,
+            srcRect = sdl.SDL_FRect(int(explosion.currentFrame) * explosion.width / 2, 0,
                 explosion.width / 2, explosion.height / 2) # 原始范围扩大了 这里要还原
             destRect = sdl.SDL_FRect(int(explosion.position.x),int(explosion.position.y),
                 explosion.width, explosion.height)
