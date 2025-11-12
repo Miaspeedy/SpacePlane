@@ -31,7 +31,7 @@ class SceneMain(Scene):
         self.timerEnd = 0.0
         self.projectilePlayerTemplate = ProjectilePlayer()
         self.projectileEnemyTemplate = ProjectileEnemy()
-        self.enemyTemplate = Enemy()
+        self.enemyTemplates = []
         self.explosionTemplate = Explosion()
         self.itemLifeTemplate = Item()
         self.projectilesPlayer = []
@@ -75,16 +75,28 @@ class SceneMain(Scene):
 
         # 初始化模版
         self.projectilePlayerTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), 
-                                                                    self.game.to_abs_path("assets/image/laser-1.png").encode())
+                                                                    self.game.to_abs_path("assets/image/bullet.png").encode())
         ok = sdl.SDL_GetTextureSize(self.projectilePlayerTemplate.texture, byref(w), byref(h))
-        self.projectilePlayerTemplate.width = int(int(w.value) / 4)
-        self.projectilePlayerTemplate.height = int(int(h.value) / 4)
+        self.projectilePlayerTemplate.width = int(int(w.value) / 2)
+        self.projectilePlayerTemplate.height = int(int(h.value) / 2)
 
-        self.enemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), 
+        enemyTemplate = Enemy()
+        enemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), 
+                                                         self.game.to_abs_path("assets/image/insect-1.png").encode())
+        ok = sdl.SDL_GetTextureSize(enemyTemplate.texture, byref(w), byref(h))
+        enemyTemplate.width = int(int(w.value) / 4)
+        enemyTemplate.height = int(int(h.value) / 4)
+
+        self.enemyTemplates.append(enemyTemplate)
+
+        enemyTemplate = Enemy()
+        enemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), 
                                                          self.game.to_abs_path("assets/image/insect-2.png").encode())
-        ok = sdl.SDL_GetTextureSize(self.enemyTemplate.texture, byref(w), byref(h))
-        self.enemyTemplate.width = int(int(w.value) / 4)
-        self.enemyTemplate.height = int(int(h.value) / 4)
+        ok = sdl.SDL_GetTextureSize(enemyTemplate.texture, byref(w), byref(h))
+        enemyTemplate.width = int(int(w.value) / 4)
+        enemyTemplate.height = int(int(h.value) / 4)
+
+        self.enemyTemplates.append(enemyTemplate)
 
         self.projectileEnemyTemplate.texture = img.IMG_LoadTexture(self.game.getRenderer(), self.game.to_abs_path("assets/image/bullet-1.png").encode())
         ok = sdl.SDL_GetTextureSize(self.projectileEnemyTemplate.texture, byref(w), byref(h))
@@ -158,8 +170,9 @@ class SceneMain(Scene):
         # 清理模板
         if self.projectilePlayerTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.projectilePlayerTemplate.texture)
-        if self.enemyTemplate.texture is not None:
-            sdl.SDL_DestroyTexture(self.enemyTemplate.texture)
+        for enemyTemplate in self.enemyTemplates:
+            if enemyTemplate.texture is not None:
+                sdl.SDL_DestroyTexture(enemyTemplate.texture)
         if self.projectileEnemyTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.projectileEnemyTemplate.texture)
         if self.explosionTemplate.texture is not None:
@@ -215,11 +228,7 @@ class SceneMain(Scene):
             # todo Game Over
             currentTime = sdl.SDL_GetTicksNS()
             self.isDead = True
-            explosion = Explosion()
-            explosion.texture = self.explosionTemplate.texture
-            explosion.width = self.explosionTemplate.width
-            explosion.height = self.explosionTemplate.height
-            explosion.totalFrame = self.explosionTemplate.totalFrame
+            explosion = Explosion.from_Explosion(self.explosionTemplate)
             explosion.position.x = (self.player.position.x + self.player.width / 2 - explosion.width / 2)
             explosion.position.y = (self.player.position.y + self.player.height / 2 - explosion.height / 2)
             explosion.startTime = currentTime
@@ -397,11 +406,8 @@ class SceneMain(Scene):
         if self.rng.random() > 1 / self.game.GlobalSettings.SpawnEnemyStep:
             return
         # 间隔时间随机生成敌人
-        enemy = Enemy()
-        enemy.texture = self.enemyTemplate.texture
-        enemy.width = self.enemyTemplate.width
-        enemy.height = self.enemyTemplate.height
-        enemy.speed = self.enemyTemplate.speed
+        enemyTemplate = self.enemyTemplates[self.rng.randint(0, len(self.enemyTemplates) - 1)]
+        enemy = Enemy.from_Enemy(enemyTemplate)
         enemy.position.x = self.rng.random() * (self.game.getWindowWidth() - enemy.width)
         enemy.position.y = -enemy.height
         self.enemies.append(enemy)
@@ -490,23 +496,14 @@ class SceneMain(Scene):
     # 其他
     def playerShoot(self) -> None:
         # 发射子弹
-        projectile = ProjectilePlayer() 
-        projectile.texture = self.projectilePlayerTemplate.texture
-        projectile.width = self.projectilePlayerTemplate.width
-        projectile.height = self.projectilePlayerTemplate.height
-        projectile.speed = self.projectilePlayerTemplate.speed
-
+        projectile = ProjectilePlayer.from_ProjectilePlayer(self.projectilePlayerTemplate)
         projectile.position.x = self.player.position.x + self.player.width / 2 - projectile.width / 2
         projectile.position.y = self.player.position.y
         self.projectilesPlayer.append(projectile)
         self.playSoundByName("player_shoot")
 
     def enemyShoot(self, enemy: Enemy) -> None:
-        projectile = ProjectileEnemy()
-        projectile.texture = self.projectileEnemyTemplate.texture
-        projectile.width = self.projectileEnemyTemplate.width
-        projectile.height = self.projectileEnemyTemplate.height
-        projectile.speed = self.projectileEnemyTemplate.speed
+        projectile = ProjectileEnemy.from_ProjectileEnemy(self.projectileEnemyTemplate)
         projectile.position.x = enemy.position.x + enemy.width / 2 - projectile.width / 2
         projectile.position.y = enemy.position.y + enemy.height / 2 - projectile.height / 2
         projectile.direction = self.getDirection(enemy)
@@ -523,11 +520,7 @@ class SceneMain(Scene):
 
     def enemyExplode(self, enemy: Enemy) -> None:
         currentTime = sdl.SDL_GetTicksNS()
-        explosion = Explosion()
-        explosion.texture = self.explosionTemplate.texture
-        explosion.width = self.explosionTemplate.width
-        explosion.height = self.explosionTemplate.height
-        explosion.totalFrame = self.explosionTemplate.totalFrame
+        explosion = Explosion.from_Explosion(self.explosionTemplate)
         explosion.position.x = enemy.position.x + enemy.width / 2 - explosion.width / 2
         explosion.position.y = (enemy.position.y + enemy.height / 2 - explosion.height / 2)
         explosion.startTime = currentTime
@@ -542,11 +535,7 @@ class SceneMain(Scene):
             self.dropItem(enemy)
 
     def dropItem(self, enemy: Enemy) -> None:
-        item = Item()
-        item.texture = self.itemLifeTemplate.texture
-        item.width = self.itemLifeTemplate.width
-        item.height = self.itemLifeTemplate.height
-        item.speed = self.itemLifeTemplate.speed
+        item = Item.from_Item(self.itemLifeTemplate)
         item.position.x = enemy.position.x + enemy.width / 2 - item.width / 2
         item.position.y = enemy.position.y + enemy.height / 2 - item.height / 2
         angle = self.rng.random() * 2.0 * math.pi
