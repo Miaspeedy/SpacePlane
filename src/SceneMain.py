@@ -34,8 +34,8 @@ class SceneMain(Scene):
         self.enemyTemplates = []
         self.explosionTemplate = Explosion()
         self.itemLifeTemplate = Item()
-        self.shieldTemplate = Item()
-        self.uiShieldTemplate = Shield()
+        self.itemshieldTemplate = Item()
+        self.ShieldTemplate = Shield()
         self.projectilesPlayer = []
         self.enemies = []
         self.projectilesEnemy = []
@@ -121,18 +121,18 @@ class SceneMain(Scene):
         self.itemLifeTemplate.width = int(w.value / 4)
         self.itemLifeTemplate.height = int(h.value / 4)
 
-        self.shieldTemplate.type = ItemType.Shield
-        self.shieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+        self.itemshieldTemplate.type = ItemType.Shield
+        self.itemshieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
                                                             self.game.to_abs_path("assets/image/bonus_shield.png").encode())
-        ok = sdl.SDL_GetTextureSize(self.shieldTemplate.texture, byref(w), byref(h))
-        self.shieldTemplate.width = int(w.value / 4)
-        self.shieldTemplate.height = int(h.value / 4)
+        ok = sdl.SDL_GetTextureSize(self.itemshieldTemplate.texture, byref(w), byref(h))
+        self.itemshieldTemplate.width = int(w.value / 4)
+        self.itemshieldTemplate.height = int(h.value / 4)
 
-        self.uiShieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+        self.ShieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
                                                             self.game.to_abs_path("assets/image/shield.png").encode())
-        ok = sdl.SDL_GetTextureSize(self.uiShieldTemplate.texture, byref(w), byref(h))
-        self.uiShieldTemplate.width = int(w.value / 2)
-        self.uiShieldTemplate.height = int(h.value / 2)
+        ok = sdl.SDL_GetTextureSize(self.ShieldTemplate.texture, byref(w), byref(h))
+        self.ShieldTemplate.width = int(w.value / 2)
+        self.ShieldTemplate.height = int(h.value / 2)
 
     def update(self, deltaTime: float) -> None:
         self.keyboardControl(deltaTime)
@@ -198,10 +198,10 @@ class SceneMain(Scene):
             sdl.SDL_DestroyTexture(self.explosionTemplate.texture)
         if self.itemLifeTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.itemLifeTemplate.texture)
-        if self.shieldTemplate.texture is not None:
-            sdl.SDL_DestroyTexture(self.shieldTemplate.texture)
-        if self.uiShieldTemplate.texture is not None:
-            sdl.SDL_DestroyTexture(self.uiShieldTemplate.texture)
+        if self.itemshieldTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.itemshieldTemplate.texture)
+        if self.ShieldTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.ShieldTemplate.texture)
 
         for projectile in self.projectilesPlayer:
             if projectile.texture is not None:
@@ -239,9 +239,10 @@ class SceneMain(Scene):
                 sceneTitle = SceneTitle(self.game)
                 self.game.changeScene(sceneTitle)
             if event.key.scancode == sdl.SDL_SCANCODE_K:
-                self.player.isShielded = not self.player.isShielded
-                self.player.shield -= 1
-                self.renderShields()
+                if self.player.currentShield > 0 and not self.player.isShielded:
+                    self.player.isShielded = not self.player.isShielded
+                    self.player.currentShield -= 1
+                    self.renderShields()
             if event.key.scancode == sdl.SDL_SCANCODE_TAB:
                 self.game.switchLanguage()
             if event.key.scancode == sdl.SDL_SCANCODE_P:
@@ -329,9 +330,9 @@ class SceneMain(Scene):
             else:
                 # 检测与玩家护盾的碰撞
                 if self.player.isShielded:
-                    shieldRect = sdl.SDL_Rect(int(self.player.position.x + self.player.width / 2 - self.uiShieldTemplate.width / 2),
-                                            int(self.player.position.y - 20 - self.uiShieldTemplate.height / 2), 
-                                            self.uiShieldTemplate.width, self.uiShieldTemplate.height)
+                    shieldRect = sdl.SDL_Rect(int(self.player.position.x + self.player.width / 2 - self.ShieldTemplate.width / 2),
+                                            int(self.player.position.y - 20 - self.ShieldTemplate.height / 2), 
+                                            self.ShieldTemplate.width, self.ShieldTemplate.height)
                     projectileRect = sdl.SDL_Rect(int(projectile.position.x),int(projectile.position.y),
                         projectile.width, projectile.height)
                     # 碰撞检测成功
@@ -484,14 +485,16 @@ class SceneMain(Scene):
         y = size + 10
         size = 32
         offset = 40
-        sdl.SDL_SetTextureColorMod(self.shieldTemplate.texture, 100, 100, 100)  # 颜色减淡
-        BackRect = sdl.SDL_FRect(x, y, size, size)
-        sdl.SDL_RenderTexture(self.game.getRenderer(), self.shieldTemplate.texture, None, BackRect)
+        sdl.SDL_SetTextureColorMod(self.itemshieldTemplate.texture, 100, 100, 100)  # 颜色减淡
+        for i in range(self.player.maxShield):
+            BackRect = sdl.SDL_FRect(x + i * offset, y, size, size)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemshieldTemplate.texture, None, BackRect)
 
-        sdl.SDL_SetTextureColorMod(self.shieldTemplate.texture, 255, 255, 255)  # 当前剩余护盾
-        if self.player.shield > 0:          
-            currentRect = sdl.SDL_FRect(x, y, size, size)
-            sdl.SDL_RenderTexture(self.game.getRenderer(), self.shieldTemplate.texture, None, currentRect)
+        sdl.SDL_SetTextureColorMod(self.itemshieldTemplate.texture, 255, 255, 255)  # 当前剩余护盾
+        if self.player.currentShield > 0:  
+            for i in range(self.player.currentShield):
+                currentRect = sdl.SDL_FRect(x + i * offset, y, size, size)
+                sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemshieldTemplate.texture, None, currentRect)        
 
         # 渲染分数
         text = self.game.localizer("score") + str(self.score)
@@ -555,12 +558,12 @@ class SceneMain(Scene):
 
     def renderShields(self) -> None:
         if self.player.isShielded:
-            sdl.SDL_SetTextureColorMod(self.uiShieldTemplate.texture, 255, 255, 255)
+            sdl.SDL_SetTextureColorMod(self.ShieldTemplate.texture, 255, 255, 255)
             # 生成护盾在玩家正前方
-            shieldRect = sdl.SDL_FRect(self.player.position.x + self.player.width / 2 - self.uiShieldTemplate.width / 2,
-                                    self.player.position.y - 20 - self.uiShieldTemplate.height / 2, 
-                                    self.uiShieldTemplate.width, self.uiShieldTemplate.height)
-            sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiShieldTemplate.texture, None, shieldRect)
+            shieldRect = sdl.SDL_FRect(self.player.position.x + self.player.width / 2 - self.ShieldTemplate.width / 2,
+                                    self.player.position.y - 20 - self.ShieldTemplate.height / 2, 
+                                    self.ShieldTemplate.width, self.ShieldTemplate.height)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.ShieldTemplate.texture, None, shieldRect)
 
     # 其他
     def playerShoot(self) -> None:
@@ -599,19 +602,17 @@ class SceneMain(Scene):
 
         self.playSoundByName("enemy_explode")
 
-        # 随机生成物品
-        if self.rng.random() < self.game.GlobalSettings.LifeItemRate:
+        # 判断是否需要生成物品
+        if self.rng.random() < self.game.GlobalSettings.DropItemRate:
             self.dropItem(enemy)
 
     def dropItem(self, enemy: Enemy) -> None:
-        # item = Item.from_Item(self.itemLifeTemplate)
-        # item.position.x = enemy.position.x + enemy.width / 2 - item.width / 2
-        # item.position.y = enemy.position.y + enemy.height / 2 - item.height / 2
-        # angle = self.rng.random() * 2.0 * math.pi
-        # item.direction.x = math.cos(angle)
-        # item.direction.y = math.sin(angle)
-        # self.items.append(item)
-        item = Item.from_Item(self.shieldTemplate)
+        item = None
+        if self.rng.random() < self.game.GlobalSettings.shieldItemRate:
+            item = Item.from_Item(self.itemshieldTemplate)
+        else:
+            item = Item.from_Item(self.itemLifeTemplate)
+
         item.position.x = enemy.position.x + enemy.width / 2 - item.width / 2
         item.position.y = enemy.position.y + enemy.height / 2 - item.height / 2
         angle = self.rng.random() * 2.0 * math.pi
@@ -626,11 +627,11 @@ class SceneMain(Scene):
             if self.player.currentHealth > self.player.maxHealth:
                 self.player.currentHealth = self.player.maxHealth
         elif item.type == ItemType.Shield:
-            self.player.shield += 1
+            self.player.currentShield += 1
 
     def playerUseShield(self) -> None:
-        if self.player.shield > 0:
-            self.player.shield -= 1
+        if self.player.currentShield > 0:
+            self.player.currentShield -= 1
             self.player.isShielded = True
             self.playSoundByName("hit")
 

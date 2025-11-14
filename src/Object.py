@@ -11,7 +11,9 @@ class GlobalObject:
         self.FPS = 60
         self.Version = "0.1.0"
         self.SpawnEnemyStep = 60
-        self.LifeItemRate = 0.5  # 生命道具掉落概率
+        self.DropItemRate = 0.4  # 物品掉落概率
+        self.LifeItemRate = 0.6  # 生命道具掉落概率
+        self.shieldItemRate = 0.4  # 护盾道具掉落概率
 
 
 class Player:
@@ -22,7 +24,8 @@ class Player:
         self.height = 0
         self.currentHealth = 3
         self.maxHealth = 3
-        self.shield = 0
+        self.currentShield = 0
+        self.maxShield = 2
         self.isShielded = False
         self.shieldTime = 5.0 * 1e9
         self.shieldCurrentTime = self.shieldTime
