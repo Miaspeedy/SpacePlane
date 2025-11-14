@@ -12,7 +12,7 @@ import math
 from Logger import GameLogger as log
 from Scene import Scene
 from SceneEnd import SceneEnd
-from Object import Player, ProjectilePlayer, Enemy, ProjectileEnemy, Explosion, ItemType, Item
+from Object import Player, ProjectilePlayer, Enemy, ProjectileEnemy, Explosion, ItemType, Item, Shield
 
 if TYPE_CHECKING:
     # 避免循环导入
@@ -34,6 +34,8 @@ class SceneMain(Scene):
         self.enemyTemplates = []
         self.explosionTemplate = Explosion()
         self.itemLifeTemplate = Item()
+        self.shieldTemplate = Item()
+        self.uiShieldTemplate = Shield()
         self.projectilesPlayer = []
         self.enemies = []
         self.projectilesEnemy = []
@@ -112,11 +114,25 @@ class SceneMain(Scene):
         self.explosionTemplate.height = int(self.explosionTemplate.height * 2)
         self.explosionTemplate.width = self.explosionTemplate.height
 
+        self.itemLifeTemplate.type = ItemType.Life
         self.itemLifeTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
                                                             self.game.to_abs_path("assets/image/bonus_life.png").encode())
         ok = sdl.SDL_GetTextureSize(self.itemLifeTemplate.texture, byref(w), byref(h))
         self.itemLifeTemplate.width = int(w.value / 4)
         self.itemLifeTemplate.height = int(h.value / 4)
+
+        self.shieldTemplate.type = ItemType.Shield
+        self.shieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+                                                            self.game.to_abs_path("assets/image/bonus_shield.png").encode())
+        ok = sdl.SDL_GetTextureSize(self.shieldTemplate.texture, byref(w), byref(h))
+        self.shieldTemplate.width = int(w.value / 4)
+        self.shieldTemplate.height = int(h.value / 4)
+
+        self.uiShieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+                                                            self.game.to_abs_path("assets/image/shield.png").encode())
+        ok = sdl.SDL_GetTextureSize(self.uiShieldTemplate.texture, byref(w), byref(h))
+        self.uiShieldTemplate.width = int(w.value / 2)
+        self.uiShieldTemplate.height = int(h.value / 2)
 
     def update(self, deltaTime: float) -> None:
         self.keyboardControl(deltaTime)
@@ -147,6 +163,9 @@ class SceneMain(Scene):
 
         # 渲染物品
         self.renderItems()
+
+        # 渲染护盾
+        self.renderShields()
 
         # 渲染爆炸效果
         self.renderExplosions()
@@ -179,6 +198,10 @@ class SceneMain(Scene):
             sdl.SDL_DestroyTexture(self.explosionTemplate.texture)
         if self.itemLifeTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.itemLifeTemplate.texture)
+        if self.shieldTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.shieldTemplate.texture)
+        if self.uiShieldTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.uiShieldTemplate.texture)
 
         for projectile in self.projectilesPlayer:
             if projectile.texture is not None:
@@ -215,6 +238,10 @@ class SceneMain(Scene):
                 from SceneTitle import SceneTitle
                 sceneTitle = SceneTitle(self.game)
                 self.game.changeScene(sceneTitle)
+            if event.key.scancode == sdl.SDL_SCANCODE_K:
+                self.player.isShielded = not self.player.isShielded
+                self.player.shield -= 1
+                self.renderShields()
             if event.key.scancode == sdl.SDL_SCANCODE_TAB:
                 self.game.switchLanguage()
             if event.key.scancode == sdl.SDL_SCANCODE_P:
@@ -236,6 +263,9 @@ class SceneMain(Scene):
             self.playSoundByName("player_explode")
             self.game.setFinalScore(self.score)
             return
+
+        # 更新护盾
+        self.updateShield(deltaTime)
 
         for enemy in self.enemies:
             enemyRect = sdl.SDL_Rect(int(enemy.position.x), int(enemy.position.y), enemy.width, enemy.height)
@@ -297,6 +327,19 @@ class SceneMain(Scene):
                 or (projectile.position.x > self.game.getWindowWidth() + margin)):
                 self.projectilesEnemy.pop(i)
             else:
+                # 检测与玩家护盾的碰撞
+                if self.player.isShielded:
+                    shieldRect = sdl.SDL_Rect(int(self.player.position.x + self.player.width / 2 - self.uiShieldTemplate.width / 2),
+                                            int(self.player.position.y - 20 - self.uiShieldTemplate.height / 2), 
+                                            self.uiShieldTemplate.width, self.uiShieldTemplate.height)
+                    projectileRect = sdl.SDL_Rect(int(projectile.position.x),int(projectile.position.y),
+                        projectile.width, projectile.height)
+                    # 碰撞检测成功
+                    if sdl.SDL_HasRectIntersection(shieldRect, projectileRect):
+                        self.projectilesEnemy.pop(i)
+                        self.playSoundByName("hit")
+                        break
+
                 # 检测与玩家的碰撞
                 projectileRect = sdl.SDL_Rect(int(projectile.position.x),int(projectile.position.y),
                     projectile.width, projectile.height)
@@ -362,6 +405,13 @@ class SceneMain(Scene):
                     self.items.pop(i)
                     self.playSoundByName("get_item")
 
+    def updateShield(self, deltaTime: float) -> None:
+        if self.player.isShielded:
+            self.player.shieldCurrentTime -= deltaTime * 1e9
+            if self.player.shieldCurrentTime <= 0:
+                self.player.isShielded = False
+                self.player.shieldCurrentTime = self.player.shieldTime
+
     def keyboardControl(self, deltaTime: float) -> None:
         if self.isDead:
             return
@@ -422,16 +472,26 @@ class SceneMain(Scene):
         sdl.SDL_SetTextureColorMod(self.uiHealth, 100, 100, 100)  # 颜色减淡
         for i in range(self.player.maxHealth):
             BackRect = sdl.SDL_FRect(x + i * offset, y, size, size)
-            sdl.SDL_RenderTexture(
-                self.game.getRenderer(), self.uiHealth, None, BackRect
-            )
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, BackRect)
 
         sdl.SDL_SetTextureColorMod(self.uiHealth, 255, 255, 255)  # 当前剩余血量
         for i in range(self.player.currentHealth):
             currentRect = sdl.SDL_FRect(x + i * offset, y, size, size)
-            sdl.SDL_RenderTexture(
-                self.game.getRenderer(), self.uiHealth, None, currentRect
-            )
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, currentRect)
+
+        # 渲染护盾
+        x = 10
+        y = size + 10
+        size = 32
+        offset = 40
+        sdl.SDL_SetTextureColorMod(self.shieldTemplate.texture, 100, 100, 100)  # 颜色减淡
+        BackRect = sdl.SDL_FRect(x, y, size, size)
+        sdl.SDL_RenderTexture(self.game.getRenderer(), self.shieldTemplate.texture, None, BackRect)
+
+        sdl.SDL_SetTextureColorMod(self.shieldTemplate.texture, 255, 255, 255)  # 当前剩余护盾
+        if self.player.shield > 0:          
+            currentRect = sdl.SDL_FRect(x, y, size, size)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.shieldTemplate.texture, None, currentRect)
 
         # 渲染分数
         text = self.game.localizer("score") + str(self.score)
@@ -493,6 +553,15 @@ class SceneMain(Scene):
             itemRect = sdl.SDL_FRect(int(item.position.x), int(item.position.y), item.width, item.height)
             sdl.SDL_RenderTexture(self.game.getRenderer(), item.texture, None, itemRect)
 
+    def renderShields(self) -> None:
+        if self.player.isShielded:
+            sdl.SDL_SetTextureColorMod(self.uiShieldTemplate.texture, 255, 255, 255)
+            # 生成护盾在玩家正前方
+            shieldRect = sdl.SDL_FRect(self.player.position.x + self.player.width / 2 - self.uiShieldTemplate.width / 2,
+                                    self.player.position.y - 20 - self.uiShieldTemplate.height / 2, 
+                                    self.uiShieldTemplate.width, self.uiShieldTemplate.height)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiShieldTemplate.texture, None, shieldRect)
+
     # 其他
     def playerShoot(self) -> None:
         # 发射子弹
@@ -535,7 +604,14 @@ class SceneMain(Scene):
             self.dropItem(enemy)
 
     def dropItem(self, enemy: Enemy) -> None:
-        item = Item.from_Item(self.itemLifeTemplate)
+        # item = Item.from_Item(self.itemLifeTemplate)
+        # item.position.x = enemy.position.x + enemy.width / 2 - item.width / 2
+        # item.position.y = enemy.position.y + enemy.height / 2 - item.height / 2
+        # angle = self.rng.random() * 2.0 * math.pi
+        # item.direction.x = math.cos(angle)
+        # item.direction.y = math.sin(angle)
+        # self.items.append(item)
+        item = Item.from_Item(self.shieldTemplate)
         item.position.x = enemy.position.x + enemy.width / 2 - item.width / 2
         item.position.y = enemy.position.y + enemy.height / 2 - item.height / 2
         angle = self.rng.random() * 2.0 * math.pi
@@ -549,6 +625,14 @@ class SceneMain(Scene):
             self.player.currentHealth += 1
             if self.player.currentHealth > self.player.maxHealth:
                 self.player.currentHealth = self.player.maxHealth
+        elif item.type == ItemType.Shield:
+            self.player.shield += 1
+
+    def playerUseShield(self) -> None:
+        if self.player.shield > 0:
+            self.player.shield -= 1
+            self.player.isShielded = True
+            self.playSoundByName("hit")
 
     def initMusic(self) -> None:
         self.sounds["bgm"] = sdl.MIX_LoadAudio(self.game.getMixer(), 

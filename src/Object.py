@@ -22,6 +22,10 @@ class Player:
         self.height = 0
         self.currentHealth = 3
         self.maxHealth = 3
+        self.shield = 0
+        self.isShielded = False
+        self.shieldTime = 5.0 * 1e9
+        self.shieldCurrentTime = self.shieldTime
         self.speed = 400
         self.coolDown = 0.3 * 1e9  # 0.05秒转为ns
         self.lastShootTime = 0
@@ -161,3 +165,10 @@ class Item:
         e.bounceCount = src.bounceCount
         e.type = src.type
         return e
+
+class Shield:
+    def __init__(self):
+        self.texture: Optional[sdl.SDL_Texture] = None
+        self.position: Optional[sdl.SDL_FPoint] = sdl.SDL_FPoint(0, 0)
+        self.width = 0
+        self.height = 0
