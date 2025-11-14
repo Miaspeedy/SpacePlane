@@ -34,7 +34,8 @@ class SceneMain(Scene):
         self.enemyTemplates = []
         self.explosionTemplate = Explosion()
         self.itemLifeTemplate = Item()
-        self.itemshieldTemplate = Item()
+        self.itemShieldTemplate = Item()
+        self.itemTimeTemplate = Item()
         self.ShieldTemplate = Shield()
         self.projectilesPlayer = []
         self.enemies = []
@@ -121,12 +122,19 @@ class SceneMain(Scene):
         self.itemLifeTemplate.width = int(w.value / 4)
         self.itemLifeTemplate.height = int(h.value / 4)
 
-        self.itemshieldTemplate.type = ItemType.Shield
-        self.itemshieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+        self.itemShieldTemplate.type = ItemType.Shield
+        self.itemShieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
                                                             self.game.to_abs_path("assets/image/bonus_shield.png").encode())
-        ok = sdl.SDL_GetTextureSize(self.itemshieldTemplate.texture, byref(w), byref(h))
-        self.itemshieldTemplate.width = int(w.value / 4)
-        self.itemshieldTemplate.height = int(h.value / 4)
+        ok = sdl.SDL_GetTextureSize(self.itemShieldTemplate.texture, byref(w), byref(h))
+        self.itemShieldTemplate.width = int(w.value / 4)
+        self.itemShieldTemplate.height = int(h.value / 4)
+
+        self.itemTimeTemplate.type = ItemType.Time
+        self.itemTimeTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
+                                                            self.game.to_abs_path("assets/image/bonus_time.png").encode())
+        ok = sdl.SDL_GetTextureSize(self.itemTimeTemplate.texture, byref(w), byref(h))
+        self.itemTimeTemplate.width = int(w.value / 4)
+        self.itemTimeTemplate.height = int(h.value / 4)
 
         self.ShieldTemplate.texture = sdl.IMG_LoadTexture(self.game.getRenderer(),
                                                             self.game.to_abs_path("assets/image/shield.png").encode())
@@ -153,10 +161,7 @@ class SceneMain(Scene):
         self.renderEnemyProjectiles()
 
         # 渲染玩家
-        if not self.isDead:            
-            playerRect = sdl.SDL_FRect(self.player.position.x, self.player.position.y,
-                        self.player.width, self.player.height)
-            sdl.SDL_RenderTexture(self.game.getRenderer(), self.player.texture, None, playerRect)
+        self.renderPlayer()
 
         # 渲染敌人
         self.renderEnemies()
@@ -198,8 +203,10 @@ class SceneMain(Scene):
             sdl.SDL_DestroyTexture(self.explosionTemplate.texture)
         if self.itemLifeTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.itemLifeTemplate.texture)
-        if self.itemshieldTemplate.texture is not None:
-            sdl.SDL_DestroyTexture(self.itemshieldTemplate.texture)
+        if self.itemShieldTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.itemShieldTemplate.texture)
+        if self.itemTimeTemplate.texture is not None:
+            sdl.SDL_DestroyTexture(self.itemTimeTemplate.texture)
         if self.ShieldTemplate.texture is not None:
             sdl.SDL_DestroyTexture(self.ShieldTemplate.texture)
 
@@ -243,6 +250,12 @@ class SceneMain(Scene):
                     self.player.isShielded = not self.player.isShielded
                     self.player.currentShield -= 1
                     self.renderShields()
+            if event.key.scancode == sdl.SDL_SCANCODE_L:
+                if self.player.currentInvincible > 0 and not self.player.isInvincible:
+                    self.player.isInvincible = not self.player.isInvincible
+                    self.player.currentInvincible -= 1
+                    sdl.SDL_SetTextureColorMod(self.player.texture, 255, 215, 100)
+
             if event.key.scancode == sdl.SDL_SCANCODE_TAB:
                 self.game.switchLanguage()
             if event.key.scancode == sdl.SDL_SCANCODE_P:
@@ -268,6 +281,9 @@ class SceneMain(Scene):
         # 更新护盾
         self.updateShield(deltaTime)
 
+        # 更新无敌
+        self.updateInvincible(deltaTime)
+
         for enemy in self.enemies:
             enemyRect = sdl.SDL_Rect(int(enemy.position.x), int(enemy.position.y), enemy.width, enemy.height)
 
@@ -275,7 +291,8 @@ class SceneMain(Scene):
                                       self.player.width,self.player.height)
             # 碰撞检测成功
             if sdl.SDL_HasRectIntersection(enemyRect, playerRect):
-                self.player.currentHealth -= 1
+                if not self.player.isInvincible:
+                    self.player.currentHealth -= 1
                 enemy.currentHealth = 0
 
     def updatePlayerProjectiles(self, deltaTime: float) -> None:
@@ -349,7 +366,7 @@ class SceneMain(Scene):
                     self.player.width,self.player.height)
 
                 # 碰撞检测成功
-                if sdl.SDL_HasRectIntersection(projectileRect, playerRect):
+                if sdl.SDL_HasRectIntersection(projectileRect, playerRect) and not self.player.isInvincible:
                     self.player.currentHealth -= projectile.damage
                     self.projectilesEnemy.pop(i)
                     self.playSoundByName("hit")
@@ -413,6 +430,14 @@ class SceneMain(Scene):
                 self.player.isShielded = False
                 self.player.shieldCurrentTime = self.player.shieldTime
 
+    def updateInvincible(self, deltaTime: float) -> None:
+        if self.player.isInvincible:
+            self.player.invincibleCurrentTime -= deltaTime * 1e9
+            if self.player.invincibleCurrentTime <= 0:
+                self.player.isInvincible = False
+                self.player.invincibleCurrentTime = self.player.invincibleTime
+                sdl.SDL_SetTextureColorMod(self.player.texture, 255, 255, 255)
+
     def keyboardControl(self, deltaTime: float) -> None:
         if self.isDead:
             return
@@ -464,6 +489,12 @@ class SceneMain(Scene):
         self.enemies.append(enemy)
 
     # 渲染相关
+    def renderPlayer(self) -> None:
+        if not self.isDead: 
+            playerRect = sdl.SDL_FRect(self.player.position.x, self.player.position.y,
+                        self.player.width, self.player.height)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.player.texture, None, playerRect)
+
     def renderUI(self) -> None:
         # 渲染血量
         x = 10
@@ -481,20 +512,31 @@ class SceneMain(Scene):
             sdl.SDL_RenderTexture(self.game.getRenderer(), self.uiHealth, None, currentRect)
 
         # 渲染护盾
-        x = 10
         y = size + 10
         size = 32
         offset = 40
-        sdl.SDL_SetTextureColorMod(self.itemshieldTemplate.texture, 100, 100, 100)  # 颜色减淡
+        sdl.SDL_SetTextureColorMod(self.itemShieldTemplate.texture, 100, 100, 100)  # 颜色减淡
         for i in range(self.player.maxShield):
             BackRect = sdl.SDL_FRect(x + i * offset, y, size, size)
-            sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemshieldTemplate.texture, None, BackRect)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemShieldTemplate.texture, None, BackRect)
 
-        sdl.SDL_SetTextureColorMod(self.itemshieldTemplate.texture, 255, 255, 255)  # 当前剩余护盾
+        sdl.SDL_SetTextureColorMod(self.itemShieldTemplate.texture, 255, 255, 255)  # 当前剩余护盾
         if self.player.currentShield > 0:  
             for i in range(self.player.currentShield):
                 currentRect = sdl.SDL_FRect(x + i * offset, y, size, size)
-                sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemshieldTemplate.texture, None, currentRect)        
+                sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemShieldTemplate.texture, None, currentRect)        
+
+        # 渲染无敌时间
+        y = (size + 10) * 2
+        size = 32
+        sdl.SDL_SetTextureColorMod(self.itemTimeTemplate.texture, 100, 100, 100)  # 颜色减淡
+        BackRect = sdl.SDL_FRect(x, y, size, size)
+        sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemTimeTemplate.texture, None, BackRect)
+
+        sdl.SDL_SetTextureColorMod(self.itemTimeTemplate.texture, 255, 255, 255)  # 当前无敌时间
+        if self.player.currentInvincible > 0:
+            currentRect = sdl.SDL_FRect(x, y, size, size)
+            sdl.SDL_RenderTexture(self.game.getRenderer(), self.itemTimeTemplate.texture, None, currentRect)
 
         # 渲染分数
         text = self.game.localizer("score") + str(self.score)
@@ -518,10 +560,11 @@ class SceneMain(Scene):
             sdl.SDL_SetRenderDrawColor(self.game.getRenderer(), 0, 0, 0, 128)            
             rect = sdl.SDL_FRect(0, 0, int(self.game.getWindowWidth()), int(self.game.getWindowHeight()))
             sdl.SDL_RenderFillRect(self.game.getRenderer(), rect)
-            self.game.renderTextCentered(self.game.localizer("pause"), 0.2, True)
-            self.game.renderTextCentered(self.game.localizer("pauseMove"), 0.4, False)
-            self.game.renderTextCentered(self.game.localizer("pauseAttack"), 0.5, False)
-            self.game.renderTextCentered(self.game.localizer("pauseUse"), 0.6, False)
+            self.game.renderTextCentered(self.game.localizer("pause"), 0.1, True)
+            self.game.renderTextCentered(self.game.localizer("pauseMove"), 0.3, False)
+            self.game.renderTextCentered(self.game.localizer("pauseAttack"), 0.4, False)
+            self.game.renderTextCentered(self.game.localizer("pauseShield"), 0.5, False)
+            self.game.renderTextCentered(self.game.localizer("pauseInvincible"), 0.6, False)
             self.game.renderTextCentered(self.game.localizer("pausePause"), 0.7, False)
             self.game.renderTextCentered(self.game.localizer("fullScreen"), 0.8, False)
 
@@ -608,8 +651,10 @@ class SceneMain(Scene):
 
     def dropItem(self, enemy: Enemy) -> None:
         item = None
-        if self.rng.random() < self.game.GlobalSettings.shieldItemRate:
-            item = Item.from_Item(self.itemshieldTemplate)
+        if self.rng.random() < self.game.GlobalSettings.timeItemRate:
+            item = Item.from_Item(self.itemTimeTemplate)
+        elif self.rng.random() < self.game.GlobalSettings.shieldItemRate:
+            item = Item.from_Item(self.itemShieldTemplate)
         else:
             item = Item.from_Item(self.itemLifeTemplate)
 
@@ -628,6 +673,8 @@ class SceneMain(Scene):
                 self.player.currentHealth = self.player.maxHealth
         elif item.type == ItemType.Shield:
             self.player.currentShield += 1
+        elif item.type == ItemType.Time:
+            self.player.currentInvincible += 1
 
     def playerUseShield(self) -> None:
         if self.player.currentShield > 0:

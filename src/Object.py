@@ -9,11 +9,12 @@ class GlobalObject:
         self.windowWidth = 600
         self.windowHeight = 800
         self.FPS = 60
-        self.Version = "0.1.0"
+        self.Version = "0.2.0"
         self.SpawnEnemyStep = 60
         self.DropItemRate = 0.4  # 物品掉落概率
-        self.LifeItemRate = 0.6  # 生命道具掉落概率
-        self.shieldItemRate = 0.4  # 护盾道具掉落概率
+        self.LifeItemRate = 0.5  # 生命道具掉落概率
+        self.shieldItemRate = 0.3  # 护盾道具掉落概率
+        self.timeItemRate = 0.2  # 无敌道具掉落概率
 
 
 class Player:
@@ -29,6 +30,10 @@ class Player:
         self.isShielded = False
         self.shieldTime = 5.0 * 1e9
         self.shieldCurrentTime = self.shieldTime
+        self.currentInvincible = 0
+        self.isInvincible = False
+        self.invincibleTime = 8.0 * 1e9
+        self.invincibleCurrentTime = self.shieldTime
         self.speed = 400
         self.coolDown = 0.3 * 1e9  # 0.05秒转为ns
         self.lastShootTime = 0

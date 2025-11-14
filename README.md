@@ -8,7 +8,8 @@
 ```
 W,A,S,D - to move;
 J - to attack;
-K - to use item;
+K - to use shield;
+L - to use Invincible;
 P - to pause;
 TAB - to switch language;
 F11 - toggle fullscreen;

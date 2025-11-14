@@ -453,7 +453,8 @@ class Game:
         self.localizeLib["pause"] = {"zh": "已暂停", "en": "Pause"}
         self.localizeLib["pauseMove"] = {"zh": "移动: WASD", "en": "Move: WASD"}
         self.localizeLib["pauseAttack"] = {"zh": "射击: J", "en": "Shoot: J"}
-        self.localizeLib["pauseUse"] = {"zh": "使用道具: K", "en": "Use items: K"}
+        self.localizeLib["pauseShield"] = {"zh": "使用护盾: K", "en": "Use Shield: K"}
+        self.localizeLib["pauseInvincible"] = {"zh": "使用无敌: L", "en": "Invincible: L"}
         self.localizeLib["pausePause"] = {"zh": "暂停: P", "en": "Pause: P"}
         self.localizeLib["version"] = {"zh": "版本: ", "en": "Version: "}
         self.localizeLib["fullScreen"] = {"zh": "全屏: F11", "en": "Fullscreen: F11"}
